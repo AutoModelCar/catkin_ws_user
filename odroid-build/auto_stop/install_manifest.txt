@@ -1,0 +1,12 @@
+/home/zargol/catkin_ws_user/odroid-install/_setup_util.py
+/home/zargol/catkin_ws_user/odroid-install/env.sh
+/home/zargol/catkin_ws_user/odroid-install/setup.bash
+/home/zargol/catkin_ws_user/odroid-install/setup.sh
+/home/zargol/catkin_ws_user/odroid-install/setup.zsh
+/home/zargol/catkin_ws_user/odroid-install/.rosinstall
+/home/zargol/catkin_ws_user/odroid-install/lib/pkgconfig/auto_stop.pc
+/home/zargol/catkin_ws_user/odroid-install/share/auto_stop/cmake/auto_stopConfig.cmake
+/home/zargol/catkin_ws_user/odroid-install/share/auto_stop/cmake/auto_stopConfig-version.cmake
+/home/zargol/catkin_ws_user/odroid-install/share/auto_stop/package.xml
+/home/zargol/catkin_ws_user/odroid-install/lib/auto_stop/auto_stop_node
+/home/zargol/catkin_ws_user/odroid-install/share/auto_stop/launch/auto_stop_user.launch
