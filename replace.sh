@@ -6,9 +6,9 @@ target=root@192.168.1.199:./$ws_name/
 echo "The workspace directory is $var."
 
 
-echo rsync -r  $var/src $target
-echo rsync -r $var/odroid-devel $target
-echo rsync -r $var/odroid-build $target
+rsync -r  $var/src $target
+rsync -r $var/odroid-devel $target
+rsync -r $var/odroid-build $target
 
 sed 's#'$var'#/root#'g $var/odroid-devel/_setup_util.py > $tmpfile
 sed -i 's#/opt/odroid-x2/sdk/#/#'g $tmpfile
