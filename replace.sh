@@ -13,7 +13,7 @@ rsync -r $var/odroid-build $target
 
 sed 's#'$var'#/root#'g $var/odroid-devel/_setup_util.py > $tmpfile
 sed -i 's#/opt/odroid-x2/sdk/#/#'g $tmpfile
-sed -i 's#/catkin_ws/catkin_ws_user/#'g $tmpfile
+sed -i 's#/catkin_ws/#/catkin_ws_user/#'g $tmpfile
 sed -i 's#/opt/ros/indigo;//opt/ros/indigo#/opt/ros/indigo;/root/catkin_ws_user/devel/#'g $tmpfile
 rsync $tmpfile $target/odroid-devel/_setup_util.py
 
