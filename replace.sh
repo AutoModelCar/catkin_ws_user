@@ -1,7 +1,7 @@
 echo "replace root path"
 var=$(pwd)
 tmpfile=/tmp/magicReplaceTempFile
-target=root@192.168.43.112:./catkin_ws_user/
+target=root@192.168.1.199:./catkin_ws_user/
 echo "The catkin_ws_user directory is $var."
 
 

@@ -1,2 +1,7 @@
 odroid-install/
 odroid-devel/
+odroid-build/
+.catkin_tools/
+build/
+devel/
+logs/
