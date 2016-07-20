@@ -1,6 +1,0 @@
-devel_space: /root/catkin_ws_user/odroid-devel
-install: true
-install_space: /root/catkin_ws_user/odroid-install
-profile: odroid
-source_space: /root/catkin_ws_user/src
-workspace: /root/catkin_ws_user
