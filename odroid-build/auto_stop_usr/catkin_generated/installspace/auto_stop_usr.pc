@@ -1,0 +1,8 @@
+prefix=/home/zargol/catkin_ws_user/odroid-install
+
+Name: auto_stop_usr
+Description: Description of auto_stop_usr
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/zargol/catkin_ws_user/odroid-install/lib -lauto_stop_usr
+Requires: std_msgs sensor_msgs geometry_msgs
