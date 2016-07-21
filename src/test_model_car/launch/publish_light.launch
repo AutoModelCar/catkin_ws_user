@@ -1,0 +1,4 @@
+<launch>
+	<node pkg="test_model_car" type="test_model_car_node" name="test_model_car_node1" output="screen">	
+	</node>
+</launch>
