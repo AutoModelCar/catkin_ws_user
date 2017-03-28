@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>line_detection_fu</name>
+  <name>ip_mapping</name>
   <version>0.0.0</version>
-  <description>The line_detection package</description>
+  <description>Inverse Perspective Mapping</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <!-- Example:  -->
