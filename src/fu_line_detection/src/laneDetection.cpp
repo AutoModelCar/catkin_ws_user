@@ -186,9 +186,15 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
     cv::Mat image = cv_ptr->image.clone();
 
     Mat cut_image = image(cv::Rect(0,cam_h * 0.25f,cam_w,cam_h * 0.75f));
+
+    #ifdef PAINT_OUTPUT
+        cv::imshow("Cut image", cut_image);
+        cv::waitKey(1);
+    #endif
+
     //Mat cut_image = image(cv::Rect(0,cam_h/2,cam_w,cam_h/2));
     Mat remapped_image = ipMapper.remap(cut_image);
-    
+
     #ifdef PAINT_OUTPUT
         cv::imshow("IPmapped image", remapped_image);
         cv::waitKey(1);
@@ -196,7 +202,9 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
 
     cv::Mat transformedImage = remapped_image(cv::Rect((cam_w/2)-proj_image_w_half+proj_image_horizontal_offset,
             proj_y_start,proj_image_w,proj_image_h)).clone();
-    
+//    cv::Mat transformedImage = remapped_image(cv::Rect((cam_w/2)-proj_image_w_half+proj_image_horizontal_offset,
+//            proj_y_start,proj_image_w,proj_image_h)).clone();
+
     cv::flip(transformedImage, transformedImage, 0);
 
     //cv::imshow("Cut IPmapped image", transformedImage);   
@@ -245,8 +253,6 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
         cv::waitKey(1);
     #endif
     //---------------------- END DEBUG OUTPUT EDGES ------------------------------//
-
-
 
     //edges -> lane markings
     vector<FuPoint<int>> laneMarkings = cLaneDetectionFu::extractLaneMarkings(edges);
