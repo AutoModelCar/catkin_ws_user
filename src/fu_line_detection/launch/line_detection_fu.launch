@@ -32,8 +32,8 @@
     <param name="maxAngleDiff"                  type="int"    value="999"/>
 
     <param name="camera_name"     		type="string"   value="app/camera/rgb/image_raw"/>      
-    <param name="cam_deg"             	type="double"   value="8"/>
-    <param name="cam_height"           	type="double"   value="18"/>
+    <param name="cam_deg"             	type="double"   value="22"/>
+    <param name="cam_height"           	type="double"   value="36"/>
 
 
     <!-- jack 13 720p calibration: -->

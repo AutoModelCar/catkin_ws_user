@@ -2,7 +2,7 @@
 
 using namespace std;
 
-//#define PAINT_OUTPUT
+#define PAINT_OUTPUT
 #define PUBLISH_DEBUG_OUTPUT
 
 static const uint32_t MY_ROS_QUEUE_SIZE = 1;
@@ -186,6 +186,7 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
     cv::Mat image = cv_ptr->image.clone();
 
     Mat cut_image = image(cv::Rect(0,cam_h * 0.25f,cam_w,cam_h * 0.75f));
+    //Mat cut_image = image(cv::Rect(0,cam_h/2,cam_w,cam_h/2));
     Mat remapped_image = ipMapper.remap(cut_image);
     
     #ifdef PAINT_OUTPUT
