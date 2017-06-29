@@ -392,7 +392,7 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
 
     //---------------------- DEBUG OUTPUT LANE POLYNOMIAL ---------------------------------//
     #ifdef PAINT_OUTPUT
-        
+        cv::namedWindow("Lane polynomial", WINDOW_NORMAL);
         cv::imshow("Lane polynomial", transformedImagePaintableLaneModel);
         cv::waitKey(1);
     #endif
