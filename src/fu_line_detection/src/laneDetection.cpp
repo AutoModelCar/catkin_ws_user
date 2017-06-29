@@ -240,6 +240,7 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
         }*/
 
 
+        cv::namedWindow("ROI, scanlines and edges", WINDOW_NORMAL);
         cv::imshow("ROI, scanlines and edges", transformedImagePaintable);
         cv::waitKey(1);
     #endif
@@ -261,6 +262,7 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
             cv::circle(transformedImagePaintable,markingLoc,1,cv::Scalar(0,255,0),-1);         
         }
 
+        cv::namedWindow("Lane Markings", WINDOW_NORMAL);
         cv::imshow("Lane Markings", transformedImagePaintable);
         cv::waitKey(1);
     #endif
@@ -317,6 +319,7 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
 
 
     #ifdef PAINT_OUTPUT
+        cv::namedWindow("Grouped Lane Markings", WINDOW_NORMAL);
         cv::imshow("Grouped Lane Markings", transformedImagePaintable);
         cv::waitKey(1);
     #endif
@@ -342,6 +345,7 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
     pubRGBImageMsg(transformedImagePaintableRansac, image_publisher_ransac);
 
     #ifdef PAINT_OUTPUT
+        cv::namedWindow("RANSAC results", WINDOW_NORMAL);
         cv::imshow("RANSAC results", transformedImagePaintableRansac);
         cv::waitKey(1);
     #endif
