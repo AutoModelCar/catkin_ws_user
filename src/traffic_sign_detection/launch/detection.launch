@@ -1,0 +1,3 @@
+<launch>
+    <node name="detection" pkg="traffic_sign_detection" type="detection" launch-prefix="nice" />
+</launch>
