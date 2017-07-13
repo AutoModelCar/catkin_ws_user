@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<launch>
+	<arg name="speed_rpm" default="50" />
+
+	<node name="simple_drive_control" pkg="simple_drive_control" type="simple_drive_control.py" output="screen">
+		<param name="speed_rpm" value="$(arg speed_rpm)" />
+	</node>
+</launch>
+
