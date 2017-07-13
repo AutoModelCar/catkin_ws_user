@@ -2,12 +2,17 @@
 
 # --- imports ---
 import rospy
-from std_msgs.msg import Int32
+from math import sqrt
+from std_msgs.msg import Int16
+from std_msgs.msg import Float32
 from nav_msgs.msg import Odometry
 
 # --- definitions ---
 epsilon = 0.1   # allowed inaccuracy for distance calculation
 speed_rpm = 50
+angle_left = 30
+angle_straight = 90
+angle_right = 150
 last_odom = None
 is_active = False
 
@@ -26,36 +31,36 @@ def waitForFirstOdom():
 
 
 def callbackForward(msg):
-    drive(msg.data, "callbackForward", speed_rpm, 0)
+    drive(msg.data, "callbackForward", speed_rpm, angle_straight)
 
 
 def callbackBackward(msg):
-    drive(msg.data, "callbackBackward", -speed_rpm, 0)
+    drive(msg.data, "callbackBackward", -speed_rpm, angle_straight)
 
 
 def callbackForwardLeft(msg):
-    drive(msg.data, "callbackForwardLeft", speed_rpm, -20)
+    drive(msg.data, "callbackForwardLeft", speed_rpm, angle_left)
 
 
 def callbackForwardRight(msg):
-    drive(msg.data, "callbackForwardRight", speed_rpm, 20)
+    drive(msg.data, "callbackForwardRight", speed_rpm, angle_right)
 
 
 def callbackBackwardLeft(msg):
-    drive(msg.data, "callbackBackwardLeft", -speed_rpm, -20)
+    drive(msg.data, "callbackBackwardLeft", -speed_rpm, angle_left)
 
 
 def callbackBackwardRight(msg):
-    drive(msg.data, "callbackBackwardRight", -speed_rpm, 20)
+    drive(msg.data, "callbackBackwardRight", -speed_rpm, angle_right)
 
 
 def drive(distance, command, speed, angle):
     global is_active
 
-    rospy.loginfo("%s: Running %s(%d)", rospy.get_name, command, distance)
+    rospy.loginfo("%s: Running %s(%f)", rospy.get_name, command, distance)
     if distance <= 0:
-        rospy.logerror(
-            "%s: Error, distance argument has to be > 0! %d given",
+        rospy.logerr(
+            "%s: Error, distance argument has to be > 0! %f given",
             rospy.get_name,
             distance)
         return
@@ -70,8 +75,10 @@ def drive(distance, command, speed, angle):
 
     # stop the car and set desired steering angle + speed
     pub_speed.publish(0)
+    pub_stop_start.publish(1)
     rospy.sleep(1)
     pub_steering.publish(angle)
+    pub_stop_start.publish(0)
     rospy.sleep(1)
     pub_speed.publish(speed)
 
@@ -90,9 +97,10 @@ def drive(distance, command, speed, angle):
     current_distance = sqrt((current_pose.x - start_pose.x)
                             ** 2 + (current_pose.y - start_pose.y)**2)
     rospy.loginfo(
-        "%s: Finished %s(%d)\nActual travelled distance = %d",
+        "%s: Finished %s(%f)\nActual travelled distance = %f",
         rospy.get_name,
         command,
+        distance,
         current_distance)
 
 
@@ -116,22 +124,26 @@ sub_odom = rospy.Subscriber("odom", Odometry, callbackOdom, queue_size=100)
 # wait for first odometry message, till adverting subscription of commands
 waitForFirstOdom()
 sub_forward = rospy.Subscriber(
-    "simple_drive_control/forward", Int32, callbackForward, queue_size=10)
+    "simple_drive_control/forward", Float32, callbackForward, queue_size=10)
 sub_backward = rospy.Subscriber(
-    "simple_drive_control/backward", Int32, callbackBackward, queue_size=10)
+    "simple_drive_control/backward", Float32, callbackBackward, queue_size=10)
 sub_forward_left = rospy.Subscriber(
-    "simple_drive_control/forward_left", Int32, callbackForwardLeft, queue_size=10)
+    "simple_drive_control/forward_left", Float32, callbackForwardLeft, queue_size=10)
 sub_forward_right = rospy.Subscriber(
-    "simple_drive_control/forward_right", Int32, callbackForwardRight, queue_size=10)
+    "simple_drive_control/forward_right", Float32, callbackForwardRight, queue_size=10)
 sub_backward_left = rospy.Subscriber(
-    "simple_drive_control/backward_left", Int32, callbackBackwardLeft, queue_size=10)
+    "simple_drive_control/backward_left", Float32, callbackBackwardLeft, queue_size=10)
 sub_backward_right = rospy.Subscriber(
-    "simple_drive_control/backward_right", Int32, callbackBackwardRight, queue_size=10)
+    "simple_drive_control/backward_right", Float32, callbackBackwardRight, queue_size=10)
 
-pub_speed = rospy.Publisher("manual_control/speed", Int32, queue_size=100)
+pub_stop_start = rospy.Publisher(
+    "manual_control/stop_start",
+    Int16,
+    queue_size=100)
+pub_speed = rospy.Publisher("manual_control/speed", Int16, queue_size=100)
 pub_steering = rospy.Publisher(
     "manual_control/steering",
-    Int32,
+    Int16,
     queue_size=100)
 
 rospy.loginfo(rospy.get_caller_id() + ": started!")
