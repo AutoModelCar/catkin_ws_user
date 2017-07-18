@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<launch>
+
+	<node name="simple_parking_maneuver" pkg="simple_parking_maneuver"
+		type="parking_maneuver.py" output="screen">
+	</node>
+	
+	<node name="simple_drive_control" pkg="simple_drive_control" 
+		type="drive_control.py" output="screen">
+		<param name="speed_rpm" value="50" />
+	</node>
+
+</launch>
+

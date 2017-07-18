@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>simple_drive_control</name>
+  <name>simple_parking_maneuver</name>
   <version>0.0.1</version>
-  <description>Let the car drive some centimeters in some direction.</description>
+  <description>The simple_parking_maneuver package</description>
 
-  <!-- One maintainer tag required, multiple allowed, one person per tag --> 
+  <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
   <maintainer email="daniel.neumann@fu-berlin.de">Daniel Neumann</maintainer>
@@ -14,20 +14,24 @@
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
   <license>TODO</license>
 
-  <!-- Url tags are optional, but mutiple are allowed, one per tag -->
+  <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/hello_world</url> -->
+  <!-- <url type="website">http://wiki.ros.org/simple_parking_maneuver</url> -->
 
-  <!-- Author tags are optional, mutiple are allowed, one per tag -->
-  <!-- Authors do not have to be maintianers, but could be -->
+  <!-- Author tags are optional, multiple are allowed, one per tag -->
+  <!-- Authors do not have to be maintainers, but could be -->
   <!-- Example: -->
   <!-- <author email="jane.doe@example.com">Jane Doe</author> -->
 
   <!-- The *_depend tags are used to specify dependencies -->
   <!-- Dependencies can be catkin packages or system dependencies -->
   <buildtool_depend>catkin</buildtool_depend>
+  <depend>message_generation</depend>
+  <depend>message_runtime</depend>
+  <depend>std_msgs</depend>
   <depend>rospy</depend>
+  <depend>simple_drive_control</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

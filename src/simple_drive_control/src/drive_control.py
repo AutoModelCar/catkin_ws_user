@@ -6,9 +6,10 @@ from math import sqrt
 from std_msgs.msg import Int16
 from std_msgs.msg import Float32
 from nav_msgs.msg import Odometry
+from std_msgs.msg import String
 
 # --- definitions ---
-epsilon = 0.1   # allowed inaccuracy for distance calculation
+epsilon = 0.05   # allowed inaccuracy for distance calculation
 speed_rpm = 50
 angle_left = 30
 angle_straight = 90
@@ -26,7 +27,7 @@ def waitForFirstOdom():
     while not rospy.is_shutdown() and last_odom is None:
         rospy.loginfo(
             "%s: No initial odometry message received. Waiting for message...",
-            str(rospy.get_name))
+            rospy.get_caller_id())
         rospy.sleep(1.0)
 
 
@@ -57,18 +58,19 @@ def callbackBackwardRight(msg):
 def drive(distance, command, speed, angle):
     global is_active
 
-    rospy.loginfo("%s: Running %s(%f)", rospy.get_name, command, distance)
+    rospy.loginfo("%s: Running %s(%f)", rospy.get_caller_id(), command, distance)
     if distance <= 0:
         rospy.logerr(
             "%s: Error, distance argument has to be > 0! %f given",
-            rospy.get_name,
+            rospy.get_caller_id(),
             distance)
         return
 
     if is_active:
         rospy.logwarn(
             "%s: Warning, another command is still active! Please wait and try again.",
-            rospy.get_name)
+            rospy.get_caller_id())
+        pub_info.publish("BUSY")
         return
 
     is_active = True
@@ -82,13 +84,13 @@ def drive(distance, command, speed, angle):
     rospy.sleep(1)
     pub_speed.publish(speed)
 
-    start_pose = last_odom.pose.pose
+    start_pos = last_odom.pose.pose.position
     current_distance = 0
 
     while not rospy.is_shutdown() and current_distance < (distance - epsilon):
-        current_pose = last_odom.pose.pose
+        current_pos = last_odom.pose.pose.position
         current_distance = sqrt(
-            (current_pose.x - start_pose.x)**2 + (current_pose.y - start_pose.y)**2)
+            (current_pos.x - start_pos.x)**2 + (current_pos.y - start_pos.y)**2)
         rospy.sleep(0.1)
 
     pub_speed.publish(0)
@@ -96,9 +98,11 @@ def drive(distance, command, speed, angle):
     current_pose = last_odom.pose.pose
     current_distance = sqrt((current_pose.x - start_pose.x)
                             ** 2 + (current_pose.y - start_pose.y)**2)
+    pub_info.publish("FINISHED")
+
     rospy.loginfo(
         "%s: Finished %s(%f)\nActual travelled distance = %f",
-        rospy.get_name,
+        rospy.get_caller_id(),
         command,
         distance,
         current_distance)
@@ -145,6 +149,7 @@ pub_steering = rospy.Publisher(
     "manual_control/steering",
     Int16,
     queue_size=100)
+pub_info = rospy.Publisher("simple_drive_control/info", String, queue_size=100)
 
 rospy.loginfo(rospy.get_caller_id() + ": started!")
 
