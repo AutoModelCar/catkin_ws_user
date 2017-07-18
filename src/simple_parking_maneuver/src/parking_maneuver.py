@@ -13,16 +13,9 @@ last_driving_control_info = ""
 def callbackDrivingControl(msg):
     last_driving_control_info = msg.data
 
-
-def waitIfBusy():
-    # wait if, driving control is busy
-    while last_driving_control_info == "BUSY":
-        rospy.sleep(1)
-
-
 def callbackBackwardLongitudinal(request):
     rospy.loginfo(rospy.get_caller_id() + ": callbackBackwardLongitudinal, direction = " + request.direction)
-    
+
     if request.direction == "left":
         driving_direction_pub1 = pub_back_left
         driving_direction_pub2 = pub_back_right
@@ -33,16 +26,18 @@ def callbackBackwardLongitudinal(request):
         return ParkingManeuverResponse(
             "ERROR: Request can only be 'left' or 'right'")
 
-    waitIfBusy()
-    driving_direction_pub1.publish(0.25)
+    driving_direction_pub1.publish(0.30)
 
-#     waitIfBusy()
+#     rospy.sleep(10)
 #     pub_back.publish(0.10)
 
-    waitIfBusy()
-    driving_direction_pub2.publish(0.25)
+    rospy.sleep(10)
+    driving_direction_pub2.publish(0.30)
 
-    waitIfBusy()
+    rospy.sleep(10)
+    pub_forward.publish(0.1)
+
+    rospy.sleep(10)
     return ParkingManeuverResponse("FINISHED")
 
 
@@ -75,6 +70,11 @@ pub_back = rospy.Publisher(
     "simple_drive_control/backward",
     Float32,
     queue_size=10)
+pub_forward = rospy.Publisher(
+    "simple_drive_control/forward",
+    Float32,
+    queue_size=10)
+
 
 rospy.loginfo(rospy.get_caller_id() + ": started!")
 

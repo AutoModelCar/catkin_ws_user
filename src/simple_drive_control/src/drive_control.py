@@ -10,7 +10,7 @@ from std_msgs.msg import String
 
 # --- definitions ---
 epsilon = 0.05   # allowed inaccuracy for distance calculation
-speed_rpm = 50
+speed_rpm = 200
 angle_left = 30
 angle_straight = 90
 angle_right = 150
@@ -66,11 +66,11 @@ def drive(distance, command, speed, angle):
             distance)
         return
 
+    pub_info.publish("BUSY")
     if is_active:
         rospy.logwarn(
             "%s: Warning, another command is still active! Please wait and try again.",
             rospy.get_caller_id())
-        pub_info.publish("BUSY")
         return
 
     is_active = True
@@ -91,13 +91,14 @@ def drive(distance, command, speed, angle):
         current_pos = last_odom.pose.pose.position
         current_distance = sqrt(
             (current_pos.x - start_pos.x)**2 + (current_pos.y - start_pos.y)**2)
+        # rospy.loginfo("current distance = %f", current_distance)
         rospy.sleep(0.1)
 
     pub_speed.publish(0)
     is_active = False
-    current_pose = last_odom.pose.pose
-    current_distance = sqrt((current_pose.x - start_pose.x)
-                            ** 2 + (current_pose.y - start_pose.y)**2)
+    current_pos = last_odom.pose.pose.position
+    current_distance = sqrt((current_pos.x - start_pos.x)
+                            ** 2 + (current_pos.y - start_pos.y)**2)
     pub_info.publish("FINISHED")
 
     rospy.loginfo(
