@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<launch>
+  <node name="undistorted_image_publisher" pkg="fisheye_camera_matrix" type="undistorted_image_publisher" output="screen" />
+</launch>

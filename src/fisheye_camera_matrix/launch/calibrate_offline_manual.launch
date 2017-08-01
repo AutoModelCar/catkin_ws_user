@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- arg <img>: name of a distorted image file in catkin_ws/../captures/ -->
+  <arg name="img" default="(200,200,0).jpg" />
+  
+  <!-- arg <calib>: name of the dst file in catkin_ws/src/camera_matrix/config/ -->
+  <arg name="calib" default="test" />
+  
+  <node name="calibration" pkg="fisheye_camera_matrix" type="offline_calibration_manual" args="$(arg img) $(arg calib).calib" output="screen" />
+</launch>
