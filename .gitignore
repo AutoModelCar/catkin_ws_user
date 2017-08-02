@@ -6,3 +6,5 @@ build/
 devel/
 logs/
 *~
+.idea/
+cmake-build-debug/
