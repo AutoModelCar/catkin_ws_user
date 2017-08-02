@@ -15,21 +15,21 @@
     <param name="defaultXLeft"                  type="int"    value="33"/>
     <param name="defaultXCenter"                type="int"    value="62"/>
     <param name="defaultXRight"                 type="int"    value="89"/>
-    <param name="interestDistancePoly"          type="int"    value="8"/>
-    <param name="interestDistanceDefault"       type="int"    value="15"/>
+    <param name="interestDistancePoly"          type="int"    value="4"/>
+    <param name="interestDistanceDefault"       type="int"    value="5"/>
     <param name="iterationsRansac"              type="int"    value="38"/>
-    <param name="proportionThreshould"          type="double" value="0.6"/>
-    <param name="m_gradientThreshold"           type="int"    value="8"/>
-    <param name="m_nonMaxWidth"                 type="int"    value="10"/>
+    <param name="proportionThreshould"          type="double" value="0.68"/>
+    <param name="m_gradientThreshold"           type="int"    value="14"/>
+    <param name="m_nonMaxWidth"                 type="int"    value="14"/>
     <param name="laneMarkingSquaredThreshold"   type="int"    value="36"/>
     <param name="angleAdjacentLeg"              type="int"    value="18"/>
     <param name="scanlinesVerticalDistance"     type="int"    value="2"/>
     <param name="scanlinesMaxCount"             type="int"    value="100"/>
-    <param name="polyY1"                        type="int"    value="0"/>
-    <param name="polyY2"                        type="int"    value="10"/>
-    <param name="polyY3"                        type="int"    value="17"/>
+    <param name="polyY1"                        type="int"    value="19"/>
+    <param name="polyY2"                        type="int"    value="19"/>
+    <param name="polyY3"                        type="int"    value="20"/>
     <param name="detectLaneStartX"              type="int"    value="8"/> <!--this was originally 0.7m, which is about 90 in our case... used for gradient computation, might help us to get rid of too crazy polynomials-->
-    <param name="maxAngleDiff"                  type="int"    value="226"/>
+    <param name="maxAngleDiff"                  type="int"    value="14"/>
 
     <param name="camera_name"                   type="string"   value="app/camera/rgb/image_raw"/>
     <param name="cam_deg"                       type="double"   value="13.0"/>
