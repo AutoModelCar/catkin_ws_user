@@ -362,55 +362,57 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
 
     pubAngle();
 
-    //---------------------- DEBUG OUTPUT LANE POLYNOMIAL ---------------------------------//
-    #ifdef PAINT_OUTPUT
-        cv::Mat transformedImagePaintableLaneModel = transformedImage.clone();
-        cv::cvtColor(transformedImagePaintableLaneModel,transformedImagePaintableLaneModel,CV_GRAY2BGR);
+    cv::Mat transformedImagePaintableLaneModel = transformedImage.clone();
+    cv::cvtColor(transformedImagePaintableLaneModel,transformedImagePaintableLaneModel,CV_GRAY2BGR);
 
-        if (lanePolynomial.hasDetected()) {
-            int r = lanePolynomial.getLastUsedPosition() == LEFT ? 255 : 0;
-            int g = lanePolynomial.getLastUsedPosition() == CENTER ? 255 : 0;
-            int b = lanePolynomial.getLastUsedPosition() == RIGHT ? 255 : 0;
+    if (lanePolynomial.hasDetected()) {
+        int r = lanePolynomial.getLastUsedPosition() == LEFT ? 255 : 0;
+        int g = lanePolynomial.getLastUsedPosition() == CENTER ? 255 : 0;
+        int b = lanePolynomial.getLastUsedPosition() == RIGHT ? 255 : 0;
 
 
-            for(int i = minYPolyRoi; i < maxYRoi; i++) {
-                cv::Point pointLoc = cv::Point(lanePolynomial.getLanePoly().at(i)+proj_image_w_half, i);
-                cv::circle(transformedImagePaintableLaneModel, pointLoc, 0, cv::Scalar(b,g,r), -1);
-            }
-
-            std::vector<FuPoint<int>> supps;
-            switch (lanePolynomial.getLastUsedPosition()) {
-                case LEFT:
-                    supps = supportersLeft;
-                    break;
-                case CENTER:
-                    supps = supportersCenter;
-                    break;
-                case RIGHT:
-                    supps = supportersRight;
-                    break;
-                default:
-                    break;
-            };
-
-            for(int i = 0; i < (int)supps.size(); i++) {
-                FuPoint<int> supp = supps[i];
-                cv::Point suppLoc = cv::Point(supp.getX(), supp.getY());
-                cv::circle(transformedImagePaintableLaneModel, suppLoc, 1, cv::Scalar(b,g,r), -1);
-            }
-
-            cv::Point pointLoc = cv::Point(proj_image_w_half, proj_image_h);
-            cv::circle(transformedImagePaintableLaneModel, pointLoc, 2, cv::Scalar(0,0,255), -1);
-
-            cv:Point anglePointLoc = cv::Point(sin(lastAngle * PI / 180) * angleAdjacentLeg + proj_image_w_half, proj_image_h - angleAdjacentLeg);
-            cv::line(transformedImagePaintableLaneModel, pointLoc, anglePointLoc, cv::Scalar(255,255,255));
-        } else {
-            cv::Point pointLoc = cv::Point(5, 5);
-            cv::circle(transformedImagePaintableLaneModel, pointLoc, 3, cv::Scalar(0,0,255), 0);
+        for(int i = minYPolyRoi; i < maxYRoi; i++) {
+            cv::Point pointLoc = cv::Point(lanePolynomial.getLanePoly().at(i)+proj_image_w_half, i);
+            cv::circle(transformedImagePaintableLaneModel, pointLoc, 0, cv::Scalar(b,g,r), -1);
         }
 
-        pubRGBImageMsg(transformedImagePaintableLaneModel, image_publisher);
+        std::vector<FuPoint<int>> supps;
+        switch (lanePolynomial.getLastUsedPosition()) {
+            case LEFT:
+                supps = supportersLeft;
+                break;
+            case CENTER:
+                supps = supportersCenter;
+                break;
+            case RIGHT:
+                supps = supportersRight;
+                break;
+            default:
+                ROS_ERROR("No last used position")
+                supps = supportersRight;
+                break;
+        };
 
+        for(int i = 0; i < (int)supps.size(); i++) {
+            FuPoint<int> supp = supps[i];
+            cv::Point suppLoc = cv::Point(supp.getX(), supp.getY());
+            cv::circle(transformedImagePaintableLaneModel, suppLoc, 1, cv::Scalar(b,g,r), -1);
+        }
+
+        cv::Point pointLoc = cv::Point(proj_image_w_half, proj_image_h);
+        cv::circle(transformedImagePaintableLaneModel, pointLoc, 2, cv::Scalar(0,0,255), -1);
+
+        cv:Point anglePointLoc = cv::Point(sin(lastAngle * PI / 180) * angleAdjacentLeg + proj_image_w_half, proj_image_h - angleAdjacentLeg);
+        cv::line(transformedImagePaintableLaneModel, pointLoc, anglePointLoc, cv::Scalar(255,255,255));
+    } else {
+        cv::Point pointLoc = cv::Point(5, 5);
+        cv::circle(transformedImagePaintableLaneModel, pointLoc, 3, cv::Scalar(0,0,255), 0);
+    }
+
+    pubRGBImageMsg(transformedImagePaintableLaneModel, image_publisher);
+
+    //---------------------- DEBUG OUTPUT LANE POLYNOMIAL ---------------------------------//
+    #ifdef PAINT_OUTPUT
         cv::namedWindow("Lane polynomial", WINDOW_NORMAL);
         cv::imshow("Lane polynomial", transformedImagePaintableLaneModel);
         cv::waitKey(1);
