@@ -1327,6 +1327,12 @@ bool cLaneDetectionFu::ransacInternal(ePosition position,
                 return a.getY() < b.getY();
             });
 
+    //ROS_ERROR("Pos: %d, length: %d", position, sortedMarkings.at(sortedMarkings.size() - 1).getY() - sortedMarkings.at(0).getY());
+
+    if (sortedMarkings.at(sortedMarkings.size() - 1).getY() - sortedMarkings.at(0).getY() < 30) {
+        return false;
+    }
+
     std::vector<FuPoint<int>> tmpSupporters = std::vector<FuPoint<int>>();
 
     // vectors for points selected from the bottom, mid and top of the sorted
