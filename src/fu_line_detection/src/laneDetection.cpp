@@ -388,7 +388,7 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
                 supps = supportersRight;
                 break;
             default:
-                ROS_ERROR("No last used position")
+                ROS_ERROR("No last used position");
                 supps = supportersRight;
                 break;
         };
@@ -976,7 +976,7 @@ void cLaneDetectionFu::createLanePoly(ePosition position) {
     double y1;
     double y2;
     double y3;
- 
+
     if (position == LEFT) {
         usedPoly = polyLeft;
         dRight = defaultXLeft-5;
