@@ -438,7 +438,7 @@ vector<vector<LineSegment<int>> > cLaneDetectionFu::getScanlines() {
         (i/scanlinesVerticalDistance) < scanlinesMaxCount && i <= proj_image_h;
         i += scanlinesVerticalDistance) {
         scanline = vector<LineSegment<int>>();
-        
+
         // walk along line
         for (int j = scanlineStart; j <= scanlineEnd; j ++) {
             bool isInside = pointPolygonTest(checkContour, cv::Point(j, i),false) >= 0;
@@ -447,14 +447,14 @@ vector<vector<LineSegment<int>> > cLaneDetectionFu::getScanlines() {
             if (isInside && j < scanlineEnd) {
                 if (segmentStart == -1) segmentStart = j;
             // found end of scanline segment, reset start
-            } else if (segmentStart != -1) {                
+            } else if (segmentStart != -1) {
                 scanline.push_back(
                         LineSegment<int>(
                                 FuPoint<int>(segmentStart, i),
                                 FuPoint<int>(j-1, i)
                             )
                         );
-                
+
                 segmentStart = -1;
             }
         }
@@ -491,18 +491,18 @@ vector<vector<EdgePoint>> cLaneDetectionFu::scanImage(cv::Mat image) {
         std::fill(scanlineVals.begin(), scanlineVals.end(), 0);
         int offset = 0;
         if (scanline.size()) {
-            offset = scanline.front().getStart().getY();            
+            offset = scanline.front().getStart().getY();
         }
 
         // scanline consisting of multiple segments
         // walk over each but store kernel results for whole scanline
-        for (auto segment : scanline) {         
+        for (auto segment : scanline) {
             int start = segment.getStart().getX();
             int end = segment.getEnd().getX();
             
             // walk along segment
             for (int i = start; i < end - g_kernel1DWidth; i++) {
-                int sum = 0;                
+                int sum = 0;
 
                 //cv::Mat uses ROW-major system -> .at(y,x)
                 // use kernel width 5 and try sobel kernel
@@ -524,7 +524,7 @@ vector<vector<EdgePoint>> cLaneDetectionFu::scanImage(cv::Mat image) {
                 sum += image.at<uint8_t>(offset+1, i+2);
                 sum += image.at<uint8_t>(offset+1, i+4);
 
-        
+
                 // +4 because of sobel weighting
                 sum = sum / (3 * g_kernel1DWidth + 4);
                 //ROS_INFO_STREAM(sum << " is kernel sum.");
@@ -1308,8 +1308,6 @@ bool cLaneDetectionFu::ransacInternal(ePosition position,
         return false;
     }
 
-    int iterations = 0;
-
     // sort the lane marking edge points
     std::vector<FuPoint<int>> sortedMarkings = laneMarkings;
 
@@ -1360,8 +1358,7 @@ bool cLaneDetectionFu::ransacInternal(ePosition position,
     // save the polynomial from the previous picture
     prevPoly = poly;
 
-    while (iterations < iterationsRansac) {
-        iterations++;
+    for (int i = 0; i < iterationsRansac; i++) {
 
         // randomly select 3 different lane marking points from bottom, mid and
         // top
