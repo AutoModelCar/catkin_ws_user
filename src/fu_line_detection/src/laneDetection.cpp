@@ -1329,6 +1329,10 @@ bool cLaneDetectionFu::ransacInternal(ePosition position,
 
     //ROS_ERROR("Pos: %d, length: %d", position, sortedMarkings.at(sortedMarkings.size() - 1).getY() - sortedMarkings.at(0).getY());
 
+    /*
+     * threshold value for minimal distance between lowest and highest point
+     * to prevent the left and center markings being chosen over the right markings
+     */
     if (sortedMarkings.at(sortedMarkings.size() - 1).getY() - sortedMarkings.at(0).getY() < 30) {
         return false;
     }
