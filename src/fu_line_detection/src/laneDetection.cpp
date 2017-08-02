@@ -59,7 +59,7 @@ cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh)
     priv_nh_.param<int>(node_name+"/m_nonMaxWidth", m_nonMaxWidth, 10);
     priv_nh_.param<int>(node_name+"/laneMarkingSquaredThreshold", laneMarkingSquaredThreshold, 25);
 
-    priv_nh_.param<int>(node_name+"/angleAdjacentLeg", angleAdjacentLeg, 25);
+    priv_nh_.param<int>(node_name+"/angleAdjacentLeg", angleAdjacentLeg, 20);
     
     priv_nh_.param<int>(node_name+"/scanlinesVerticalDistance", scanlinesVerticalDistance, 1);
     priv_nh_.param<int>(node_name+"/scanlinesMaxCount", scanlinesMaxCount, 100);
@@ -362,46 +362,55 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
 
     pubAngle();
 
-    cv::Mat transformedImagePaintableLaneModel = transformedImage.clone();
-    cv::cvtColor(transformedImagePaintableLaneModel,transformedImagePaintableLaneModel,CV_GRAY2BGR);
-
-    if (lanePolynomial.hasDetected()) {
-        int r = lanePolynomial.getLastUsedPosition() == LEFT ? 255 : 0;
-        int g = lanePolynomial.getLastUsedPosition() == CENTER ? 255 : 0;
-        int b = lanePolynomial.getLastUsedPosition() == RIGHT ? 255 : 0;
-
-        
-        for(int i = minYPolyRoi; i < maxYRoi; i++)
-        {
-            cv::Point pointLoc = cv::Point(lanePolynomial.getLanePoly().at(i)+proj_image_w_half, i);
-            cv::circle(transformedImagePaintableLaneModel,pointLoc,0,cv::Scalar(b,g,r),-1);
-        }     
-
-        std::vector<FuPoint<int>> supps = lanePolynomial.getLastUsedPosition() == LEFT 
-            ? supportersLeft 
-            : lanePolynomial.getLastUsedPosition() == CENTER ? supportersCenter : supportersRight;
-
-        for(int i = 0; i < (int)supps.size(); i++)
-        {         
-            FuPoint<int> supp = supps[i];
-            cv::Point suppLoc = cv::Point(supp.getX(), supp.getY());
-            cv::circle(transformedImagePaintableLaneModel,suppLoc,1,cv::Scalar(b,g,r),-1);         
-        }    
-
-        cv::Point pointLoc = cv::Point(proj_image_w_half,proj_image_h);
-        cv::circle(transformedImagePaintableLaneModel,pointLoc,2,cv::Scalar(0,0,255),-1); 
-
-        cv:Point anglePointLoc = cv::Point(sin(lastAngle*PI/180)*angleAdjacentLeg+proj_image_w_half,proj_image_h-angleAdjacentLeg);
-        cv::line(transformedImagePaintableLaneModel,pointLoc,anglePointLoc,cv::Scalar(255,255,255));
-    } else {
-        cv::Point pointLoc = cv::Point(5,5);
-        cv::circle(transformedImagePaintableLaneModel,pointLoc,3,cv::Scalar(0,0,255),0);
-    }
-
-    pubRGBImageMsg(transformedImagePaintableLaneModel, image_publisher);
-
     //---------------------- DEBUG OUTPUT LANE POLYNOMIAL ---------------------------------//
     #ifdef PAINT_OUTPUT
+        cv::Mat transformedImagePaintableLaneModel = transformedImage.clone();
+        cv::cvtColor(transformedImagePaintableLaneModel,transformedImagePaintableLaneModel,CV_GRAY2BGR);
+
+        if (lanePolynomial.hasDetected()) {
+            int r = lanePolynomial.getLastUsedPosition() == LEFT ? 255 : 0;
+            int g = lanePolynomial.getLastUsedPosition() == CENTER ? 255 : 0;
+            int b = lanePolynomial.getLastUsedPosition() == RIGHT ? 255 : 0;
+
+
+            for(int i = minYPolyRoi; i < maxYRoi; i++) {
+                cv::Point pointLoc = cv::Point(lanePolynomial.getLanePoly().at(i)+proj_image_w_half, i);
+                cv::circle(transformedImagePaintableLaneModel, pointLoc, 0, cv::Scalar(b,g,r), -1);
+            }
+
+            std::vector<FuPoint<int>> supps;
+            switch (lanePolynomial.getLastUsedPosition()) {
+                case LEFT:
+                    supps = supportersLeft;
+                    break;
+                case CENTER:
+                    supps = supportersCenter;
+                    break;
+                case RIGHT:
+                    supps = supportersRight;
+                    break;
+                default:
+                    break;
+            };
+
+            for(int i = 0; i < (int)supps.size(); i++) {
+                FuPoint<int> supp = supps[i];
+                cv::Point suppLoc = cv::Point(supp.getX(), supp.getY());
+                cv::circle(transformedImagePaintableLaneModel, suppLoc, 1, cv::Scalar(b,g,r), -1);
+            }
+
+            cv::Point pointLoc = cv::Point(proj_image_w_half, proj_image_h);
+            cv::circle(transformedImagePaintableLaneModel, pointLoc, 2, cv::Scalar(0,0,255), -1);
+
+            cv:Point anglePointLoc = cv::Point(sin(lastAngle * PI / 180) * angleAdjacentLeg + proj_image_w_half, proj_image_h - angleAdjacentLeg);
+            cv::line(transformedImagePaintableLaneModel, pointLoc, anglePointLoc, cv::Scalar(255,255,255));
+        } else {
+            cv::Point pointLoc = cv::Point(5, 5);
+            cv::circle(transformedImagePaintableLaneModel, pointLoc, 3, cv::Scalar(0,0,255), 0);
+        }
+
+        pubRGBImageMsg(transformedImagePaintableLaneModel, image_publisher);
+
         cv::namedWindow("Lane polynomial", WINDOW_NORMAL);
         cv::imshow("Lane polynomial", transformedImagePaintableLaneModel);
         cv::waitKey(1);
@@ -1544,19 +1553,24 @@ void cLaneDetectionFu::pubRGBImageMsg(cv::Mat& rgb_mat, image_transport::CameraP
 
 void cLaneDetectionFu::pubAngle()
 {
-    if (!lanePolynomial.hasDetected()) {
-	return;
-    }
+    if (!lanePolynomial.hasDetected())
+        return;
 
-    double oppositeLeg = lanePolynomial.getLanePoly().at(proj_image_h-angleAdjacentLeg);    
-    double result = atan (oppositeLeg/angleAdjacentLeg) * 180 / PI;
+    // why proj_image_h? 
+    double oppositeLeg = lanePolynomial.getLanePoly().at(proj_image_h - angleAdjacentLeg);
+    // Gegenkathete - oppositeLeg
+    // Ankathete - angleAdjacentLeg?!
+    // this seems to be wrong!
+    double result = atan(oppositeLeg / angleAdjacentLeg) * 180 / PI;
 
+    /*
+     * filter too rash steering angles / jitter in polynomial data
+     */
     if (std::abs(result - lastAngle) > maxAngleDiff) {
-        if (result - lastAngle > 0) {
+        if (result - lastAngle > 0)
             result = lastAngle + maxAngleDiff;
-        } else {
+        else
             result = lastAngle - maxAngleDiff;
-        }
     }
 
     lastAngle = result;
