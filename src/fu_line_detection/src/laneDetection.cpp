@@ -299,6 +299,12 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
             cv::Point markingLoc = cv::Point(marking.getX(), marking.getY());
             cv::circle(transformedImagePaintable,markingLoc,1,cv::Scalar(255,0,0),-1);         
         }
+        for(int i = 0; i < (int)laneMarkingsNotUsed.size(); i++)
+        {
+            FuPoint<int> marking = laneMarkingsNotUsed[i];
+            cv::Point markingLoc = cv::Point(marking.getX(), marking.getY());
+            cv::circle(transformedImagePaintable,markingLoc,1,cv::Scalar(0,255,255),-1);
+        }
 
         cv::Point2d p1l(defaultXLeft,minYPolyRoi);
         cv::Point2d p2l(defaultXLeft,maxYRoi-1);
@@ -664,7 +670,7 @@ std::vector<FuPoint<int>> cLaneDetectionFu::extractLaneMarkings(const std::vecto
  *
  * @param laneMarkings  a vector containing all detected lane markings
  */
-void cLaneDetectionFu::buildLaneMarkingsLists(
+/*void cLaneDetectionFu::buildLaneMarkingsLists(
         const std::vector<FuPoint<int>> &laneMarkings) {
     laneMarkingsLeft.clear();
     laneMarkingsCenter.clear();
@@ -707,9 +713,70 @@ void cLaneDetectionFu::buildLaneMarkingsLists(
             continue;
         }
     }
+}*/
+
+void cLaneDetectionFu::buildLaneMarkingsLists(
+        const std::vector<FuPoint<int>> &laneMarkings) {
+    laneMarkingsLeft.clear();
+    laneMarkingsCenter.clear();
+    laneMarkingsRight.clear();
+    laneMarkingsNotUsed.clear();
+
+    // sort the lane marking edge points
+    std::vector<FuPoint<int>> sortedMarkings = laneMarkings;
+
+    std::sort(sortedMarkings.begin(), sortedMarkings.end(),
+              [](FuPoint<int> a, FuPoint<int> b) {
+                  return a.getY() > b.getY();
+              });
+
+    for (FuPoint<int> laneMarking : sortedMarkings) {
+        if (laneMarkingsRight.size() == 0) {
+            if (polyDetectedRight) {
+                if (isInPolyRoi(polyRight, laneMarking)) {
+                    laneMarkingsRight.push_back(laneMarking);
+                    continue;
+                }
+            }
+
+            if (isInDefaultRoi(RIGHT, laneMarking)) {
+                laneMarkingsRight.push_back(laneMarking);
+                continue;
+            }
+        } else {
+            if (isInRange(laneMarkingsRight.at(laneMarkingsRight.size() - 1), laneMarking)) {
+                laneMarkingsRight.push_back(laneMarking);
+                continue;
+            }
+
+            /*double x1 = laneMarking.getX();
+            double x2 = laneMarkingsRight.at(laneMarkingsRight.size() - 1).getX();
+            double y1 = laneMarking.getY();
+            double y2 = laneMarkingsRight.at(laneMarkingsRight.size() - 1).getY();
+
+            double x = std::abs(x1 - x2);
+            double y = std::abs(y1 - y2);
+
+            ROS_ERROR("x1: %f, x2: %f, y1: %f, y2: %f, x: %f, y: %f", x1, x2, y1, y2, x, y);*/
+        }
+
+        laneMarkingsNotUsed.push_back(laneMarking);
+    }
 }
 
+bool cLaneDetectionFu::isInRange(FuPoint<int> &lanePoint, FuPoint<int> &p) {
+    if (p.getY() < minYDefaultRoi || p.getY() > maxYRoi) {
+        return false;
+    }
+    if (p.getY() > lanePoint.getY()) {
+        return false;
+    }
 
+    double distanceX = std::abs(p.getX() - lanePoint.getX());
+    double distanceY = std::abs(p.getY() - lanePoint.getY());
+
+    return distanceX < interestDistancePoly && distanceY < interestDistancePoly;
+}
 
 
 /**
@@ -1281,12 +1348,12 @@ void cLaneDetectionFu::detectLane() {
  * polynomials.
  */
 void cLaneDetectionFu::ransac() {
-    polyDetectedLeft = ransacInternal(LEFT, laneMarkingsLeft, bestPolyLeft,
+    /*polyDetectedLeft = ransacInternal(LEFT, laneMarkingsLeft, bestPolyLeft,
             polyLeft, supportersLeft, prevPolyLeft, pointsLeft);
 
     polyDetectedCenter = ransacInternal(CENTER, laneMarkingsCenter,
             bestPolyCenter, polyCenter, supportersCenter, prevPolyCenter,
-            pointsCenter);
+            pointsCenter);*/
 
     polyDetectedRight = ransacInternal(RIGHT, laneMarkingsRight, bestPolyRight,
             polyRight, supportersRight, prevPolyRight, pointsRight);
@@ -1327,15 +1394,16 @@ bool cLaneDetectionFu::ransacInternal(ePosition position,
                 return a.getY() < b.getY();
             });
 
-    //ROS_ERROR("Pos: %d, length: %d", position, sortedMarkings.at(sortedMarkings.size() - 1).getY() - sortedMarkings.at(0).getY());
+    ROS_ERROR("length: %d", sortedMarkings.size());
 
     /*
      * threshold value for minimal distance between lowest and highest point
      * to prevent the left and center markings being chosen over the right markings
      */
-    if (sortedMarkings.at(sortedMarkings.size() - 1).getY() - sortedMarkings.at(0).getY() < 30) {
+    /*if (sortedMarkings.at(sortedMarkings.size() - 1).getY() - sortedMarkings.at(0).getY() < 30) {
+        ROS_ERROR("Minimal distance");
         return false;
-    }
+    }*/
 
     std::vector<FuPoint<int>> tmpSupporters = std::vector<FuPoint<int>>();
 
@@ -1490,6 +1558,26 @@ bool cLaneDetectionFu::ransacInternal(ePosition position,
 bool cLaneDetectionFu::polyValid(ePosition position, NewtonPolynomial poly,
         NewtonPolynomial prevPoly) {
 
+    if (prevPoly.getDegree() != -1) {
+        FuPoint<int> p4 = FuPoint<int>(poly.at(polyY1), polyY1);
+        FuPoint<int> p5 = FuPoint<int>(prevPoly.at(polyY1), polyY1);
+
+        if (horizDistance(p4, p5) > 5) {//0.05 * meters) {
+            //ROS_INFO("Poly was to far away from previous poly at y = 25");
+            return false;
+        }
+
+        FuPoint<int> p6 = FuPoint<int>(poly.at(polyY2), polyY2);
+        FuPoint<int> p7 = FuPoint<int>(prevPoly.at(polyY2), polyY2);
+
+        if (horizDistance(p6, p7) > 5) {//0.05 * meters) {
+            //ROS_INFO("Poly was to far away from previous poly at y = 30");
+            return false;
+        }
+
+        return true;
+    }
+
     FuPoint<int> p1 = FuPoint<int>(poly.at(polyY1), polyY1);    //y = 75
 
     if (horizDistanceToDefaultLine(position, p1) > 10) {
@@ -1509,24 +1597,6 @@ bool cLaneDetectionFu::polyValid(ePosition position, NewtonPolynomial poly,
     if (horizDistanceToDefaultLine(position, p3) > 40) {
         //ROS_INFO("Poly was to far away from default line at y = 30");
         return false;
-    }
-
-    if (prevPoly.getDegree() != -1) {
-        FuPoint<int> p4 = FuPoint<int>(poly.at(polyY1), polyY1);
-        FuPoint<int> p5 = FuPoint<int>(prevPoly.at(polyY1), polyY1);
-
-        if (horizDistance(p4, p5) > 5) {//0.05 * meters) {
-            //ROS_INFO("Poly was to far away from previous poly at y = 25");
-            return false;
-        }
-
-        FuPoint<int> p6 = FuPoint<int>(poly.at(polyY2), polyY2);
-        FuPoint<int> p7 = FuPoint<int>(prevPoly.at(polyY2), polyY2);
-
-        if (horizDistance(p6, p7) > 5) {//0.05 * meters) {
-            //ROS_INFO("Poly was to far away from previous poly at y = 30");
-            return false;
-        }
     }
 
     //ROS_INFO("Poly is valid");

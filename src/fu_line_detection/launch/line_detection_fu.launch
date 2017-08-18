@@ -15,7 +15,7 @@
     <param name="defaultXLeft"                  type="int"    value="33"/>
     <param name="defaultXCenter"                type="int"    value="62"/>
     <param name="defaultXRight"                 type="int"    value="89"/>
-    <param name="interestDistancePoly"          type="int"    value="4"/>
+    <param name="interestDistancePoly"          type="int"    value="10"/>
     <param name="interestDistanceDefault"       type="int"    value="5"/>
     <param name="iterationsRansac"              type="int"    value="38"/>
     <param name="proportionThreshould"          type="double" value="0.68"/>
