@@ -267,6 +267,8 @@ class cLaneDetectionFu
 
         void buildLaneMarkingsLists(const std::vector<FuPoint<int>> &laneMarkings);
 
+        void movePoly(ePosition position, NewtonPolynomial &poly1, NewtonPolynomial &poly2);
+
         bool isInRange(FuPoint<int> &lanePoint, FuPoint<int> &p);
 
         int horizDistanceToDefaultLine(ePosition &line, FuPoint<int> &p);

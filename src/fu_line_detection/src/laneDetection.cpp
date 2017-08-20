@@ -731,25 +731,69 @@ void cLaneDetectionFu::buildLaneMarkingsLists(
               });
 
     for (FuPoint<int> laneMarking : sortedMarkings) {
-        if (laneMarkingsRight.size() == 0) {
-            if (polyDetectedRight) {
-                if (isInPolyRoi(polyRight, laneMarking)) {
-                    laneMarkingsRight.push_back(laneMarking);
-                    continue;
-                }
-            }
-
-            if (isInDefaultRoi(RIGHT, laneMarking)) {
-                laneMarkingsRight.push_back(laneMarking);
-                continue;
-            }
-        } else {
+        if (laneMarkingsRight.size() > 0) {
             if (isInRange(laneMarkingsRight.at(laneMarkingsRight.size() - 1), laneMarking)) {
                 laneMarkingsRight.push_back(laneMarking);
                 continue;
             }
+        }
 
-            /*double x1 = laneMarking.getX();
+        if (laneMarkingsCenter.size() > 0) {
+            if (isInRange(laneMarkingsCenter.at(laneMarkingsCenter.size() - 1), laneMarking)) {
+                laneMarkingsCenter.push_back(laneMarking);
+                continue;
+            }
+        }
+
+        if (laneMarkingsLeft.size() > 0) {
+            if (isInRange(laneMarkingsLeft.at(laneMarkingsLeft.size() - 1), laneMarking)) {
+                laneMarkingsLeft.push_back(laneMarking);
+                continue;
+            }
+        }
+
+        if (polyDetectedRight) {
+            if (isInPolyRoi(polyRight, laneMarking)) {
+                laneMarkingsRight.push_back(laneMarking);
+                continue;
+            }
+        }
+
+        if (polyDetectedCenter) {
+            if (isInPolyRoi(polyCenter, laneMarking)) {
+                laneMarkingsCenter.push_back(laneMarking);
+                continue;
+            }
+        }
+
+        if (polyDetectedLeft) {
+            if (isInPolyRoi(polyLeft, laneMarking)) {
+                laneMarkingsLeft.push_back(laneMarking);
+                continue;
+            }
+        }
+
+        if (isInDefaultRoi(RIGHT, laneMarking)) {
+            laneMarkingsRight.push_back(laneMarking);
+            continue;
+        }
+
+        if (isInDefaultRoi(CENTER, laneMarking)) {
+            laneMarkingsCenter.push_back(laneMarking);
+            continue;
+        }
+
+        if (isInDefaultRoi(LEFT, laneMarking)) {
+            laneMarkingsLeft.push_back(laneMarking);
+            continue;
+        }
+
+        /*if (laneMarkingsRight.size() == 0) {
+
+        } else {
+
+
+            double x1 = laneMarking.getX();
             double x2 = laneMarkingsRight.at(laneMarkingsRight.size() - 1).getX();
             double y1 = laneMarking.getY();
             double y2 = laneMarkingsRight.at(laneMarkingsRight.size() - 1).getY();
@@ -757,11 +801,154 @@ void cLaneDetectionFu::buildLaneMarkingsLists(
             double x = std::abs(x1 - x2);
             double y = std::abs(y1 - y2);
 
-            ROS_ERROR("x1: %f, x2: %f, y1: %f, y2: %f, x: %f, y: %f", x1, x2, y1, y2, x, y);*/
-        }
+            ROS_ERROR("x1: %f, x2: %f, y1: %f, y2: %f, x: %f, y: %f", x1, x2, y1, y2, x, y);
+        }*/
 
         laneMarkingsNotUsed.push_back(laneMarking);
     }
+}
+
+void cLaneDetectionFu::movePoly(ePosition position, NewtonPolynomial &poly1, NewtonPolynomial &poly2) {
+    double x1 = 0.05;
+    double x2 = 0.4;
+    double x3 = 1.0;
+
+    FuPoint<double> pointRight1;
+    FuPoint<double> pointRight2;
+    FuPoint<double> pointRight3;
+
+    double m1 = 0;
+    double m2 = 0;
+    double m3 = 0;
+
+    double dRight = 0;
+
+    NewtonPolynomial usedPoly;
+
+    /*
+     * Depending on the sign of the gradient of the poly at the different
+     * x-values and depending on which position we are, we have to add or
+     * subtract the expected distance to the respective lane polynomial, to get
+     * the wanted points.
+     *
+     * The calculation is done for the x- and y-components of the points
+     * separately using the trigonometric ratios of right triangles and the fact
+     * that arctan of some gradient equals its angle to the x-axis in degree.
+     */
+    if (position == LEFT) {
+        usedPoly = polyLeft;
+        m1 = gradient(x1, pointsLeft, usedPoly.getCoefficients());
+        m2 = gradient(x2, pointsLeft, usedPoly.getCoefficients());
+        m3 = gradient(x3, pointsLeft, usedPoly.getCoefficients());
+
+        dRight = defaultXLeft;
+
+        if (m1 > 0) {
+            pointRight1 = FuPoint<double>(x1 + dRight * cos(atan(-1 / m1)),
+                    usedPoly.at(x1) + dRight * sin(atan(-1 / m1)));
+        }
+        else {
+            pointRight1 = FuPoint<double>(x1 - dRight * cos(atan(-1 / m1)),
+                    usedPoly.at(x1) - dRight * sin(atan(-1 / m1)));
+        }
+
+        if (m2 > 0) {
+            pointRight2 = FuPoint<double>(x2 + dRight * cos(atan(-1 / m2)),
+                    usedPoly.at(x2) + dRight * sin(atan(-1 / m2)));
+        }
+        else {
+            pointRight2 = FuPoint<double>(x2 - dRight * cos(atan(-1 / m2)),
+                    usedPoly.at(x2) - dRight * sin(atan(-1 / m2)));
+        }
+
+        if (m3 > 0) {
+            pointRight3 = FuPoint<double>(x3 + dRight * cos(atan(-1 / m3)),
+                    usedPoly.at(x3) + dRight * sin(atan(-1 / m3)));
+        }
+        else {
+            pointRight3 = FuPoint<double>(x3 - dRight * cos(atan(-1 / m3)),
+                    usedPoly.at(x3) - dRight * sin(atan(-1 / m3)));
+        }
+    }
+    else if (position == CENTER) {
+        usedPoly = polyCenter;
+        m1 = gradient(x1, pointsCenter, usedPoly.getCoefficients());
+        m2 = gradient(x2, pointsCenter, usedPoly.getCoefficients());
+        m3 = gradient(x3, pointsCenter, usedPoly.getCoefficients());
+
+        dRight = defaultXCenter;
+
+        if (m1 > 0) {
+            pointRight1 = FuPoint<double>(x1 + dRight * cos(atan(-1 / m1)),
+                    usedPoly.at(x1) + dRight * sin(atan(-1 / m1)));
+        }
+        else {
+            pointRight1 = FuPoint<double>(x1 - dRight * cos(atan(-1 / m1)),
+                    usedPoly.at(x1) - dRight * sin(atan(-1 / m1)));
+        }
+
+        if (m2 > 0) {
+            pointRight2 = FuPoint<double>(x2 + dRight * cos(atan(-1 / m2)),
+                    usedPoly.at(x2) + dRight * sin(atan(-1 / m2)));
+        }
+        else {
+            pointRight2 = FuPoint<double>(x2 - dRight * cos(atan(-1 / m2)),
+                    usedPoly.at(x2) - dRight * sin(atan(-1 / m2)));
+        }
+
+        if (m3 > 0) {
+            pointRight3 = FuPoint<double>(x3 + dRight * cos(atan(-1 / m3)),
+                    usedPoly.at(x3) + dRight * sin(atan(-1 / m3)));
+        }
+        else {
+            pointRight3 = FuPoint<double>(x3 - dRight * cos(atan(-1 / m3)),
+                    usedPoly.at(x3) - dRight * sin(atan(-1 / m3)));
+        }
+    }
+    else if (position == RIGHT) {
+        usedPoly = polyRight;
+        m1 = gradient(x1, pointsRight, usedPoly.getCoefficients());
+        m2 = gradient(x2, pointsRight, usedPoly.getCoefficients());
+        m3 = gradient(x3, pointsRight, usedPoly.getCoefficients());
+
+        dRight = defaultXCenter;
+
+        if (m1 > 0) {
+            pointRight1 = FuPoint<double>(x1 - dRight * cos(atan(-1 / m1)),
+                    usedPoly.at(x1) - dRight * sin(atan(-1 / m1)));
+        }
+        else {
+            pointRight1 = FuPoint<double>(x1 + dRight * cos(atan(-1 / m1)),
+                    usedPoly.at(x1) + dRight * sin(atan(-1 / m1)));
+        }
+
+        if (m2 > 0) {
+            pointRight2 = FuPoint<double>(x2 - dRight * cos(atan(-1 / m2)),
+                    usedPoly.at(x2) - dRight * sin(atan(-1 / m2)));
+        }
+        else {
+            pointRight2 = FuPoint<double>(x2 + dRight * cos(atan(-1 / m2)),
+                    usedPoly.at(x2) + dRight * sin(atan(-1 / m2)));
+        }
+
+        if (m3 > 0) {
+            pointRight3 = FuPoint<double>(x3 - dRight * cos(atan(-1 / m3)),
+                    usedPoly.at(x3) - dRight * sin(atan(-1 / m3)));
+        }
+        else {
+            pointRight3 = FuPoint<double>(x3 + dRight * cos(atan(-1 / m3)),
+                    usedPoly.at(x3) + dRight * sin(atan(-1 / m3)));
+        }
+    }
+
+    // create the lane polynomial out of the shifted points
+    lanePoly.addDataXY(pointRight1);
+    lanePoly.addDataXY(pointRight2);
+    lanePoly.addDataXY(pointRight3);
+
+    lanePolynomial.setLanePoly(lanePoly);
+    lanePolynomial.setDetected();
+    lanePolynomial.setLastUsedPosition(position);
 }
 
 bool cLaneDetectionFu::isInRange(FuPoint<int> &lanePoint, FuPoint<int> &p) {
@@ -1348,12 +1535,12 @@ void cLaneDetectionFu::detectLane() {
  * polynomials.
  */
 void cLaneDetectionFu::ransac() {
-    /*polyDetectedLeft = ransacInternal(LEFT, laneMarkingsLeft, bestPolyLeft,
+    polyDetectedLeft = ransacInternal(LEFT, laneMarkingsLeft, bestPolyLeft,
             polyLeft, supportersLeft, prevPolyLeft, pointsLeft);
 
     polyDetectedCenter = ransacInternal(CENTER, laneMarkingsCenter,
             bestPolyCenter, polyCenter, supportersCenter, prevPolyCenter,
-            pointsCenter);*/
+            pointsCenter);
 
     polyDetectedRight = ransacInternal(RIGHT, laneMarkingsRight, bestPolyRight,
             polyRight, supportersRight, prevPolyRight, pointsRight);
