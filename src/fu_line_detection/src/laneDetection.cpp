@@ -722,6 +722,16 @@ void cLaneDetectionFu::buildLaneMarkingsLists(
     laneMarkingsRight.clear();
     laneMarkingsNotUsed.clear();
 
+    NewtonPolynomial poly1 = NewtonPolynomial();
+    NewtonPolynomial poly2 = NewtonPolynomial();
+
+    if (polyDetectedLeft)
+        movePoly(LEFT, poly1, poly2);
+    if (polyDetectedCenter)
+        movePoly(CENTER, poly1, poly2);
+    if (polyDetectedRight)
+        movePoly(RIGHT, poly1, poly2);
+
     // sort the lane marking edge points
     std::vector<FuPoint<int>> sortedMarkings = laneMarkings;
 
@@ -731,6 +741,49 @@ void cLaneDetectionFu::buildLaneMarkingsLists(
               });
 
     for (FuPoint<int> laneMarking : sortedMarkings) {
+
+        if (polyDetectedRight) {
+            if (isInPolyRoi(poly1, laneMarking)) {
+                laneMarkingsCenter.push_back(laneMarking);
+                continue;
+            }
+        }
+
+        if (polyDetectedRight) {
+            if (isInPolyRoi(poly2, laneMarking)) {
+                laneMarkingsLeft.push_back(laneMarking);
+                continue;
+            }
+        }
+
+        if (polyDetectedCenter) {
+            if (isInPolyRoi(poly1, laneMarking)) {
+                laneMarkingsLeft.push_back(laneMarking);
+                continue;
+            }
+        }
+
+        if (polyDetectedCenter) {
+            if (isInPolyRoi(poly2, laneMarking)) {
+                laneMarkingsRight.push_back(laneMarking);
+                continue;
+            }
+        }
+
+        if (polyDetectedLeft) {
+            if (isInPolyRoi(poly1, laneMarking)) {
+                laneMarkingsCenter.push_back(laneMarking);
+                continue;
+            }
+        }
+
+        if (polyDetectedLeft) {
+            if (isInPolyRoi(poly2, laneMarking)) {
+                laneMarkingsRight.push_back(laneMarking);
+                continue;
+            }
+        }
+
         if (laneMarkingsRight.size() > 0) {
             if (isInRange(laneMarkingsRight.at(laneMarkingsRight.size() - 1), laneMarking)) {
                 laneMarkingsRight.push_back(laneMarking);
@@ -813,9 +866,15 @@ void cLaneDetectionFu::movePoly(ePosition position, NewtonPolynomial &poly1, New
     double x2 = 0.4;
     double x3 = 1.0;
 
-    FuPoint<double> pointRight1;
-    FuPoint<double> pointRight2;
-    FuPoint<double> pointRight3;
+    double laneWidth = 20.f;
+
+    FuPoint<double> poly1pointRight1;
+    FuPoint<double> poly1pointRight2;
+    FuPoint<double> poly1pointRight3;
+
+    FuPoint<double> poly2pointRight1;
+    FuPoint<double> poly2pointRight2;
+    FuPoint<double> poly2pointRight3;
 
     double m1 = 0;
     double m2 = 0;
@@ -841,34 +900,29 @@ void cLaneDetectionFu::movePoly(ePosition position, NewtonPolynomial &poly1, New
         m2 = gradient(x2, pointsLeft, usedPoly.getCoefficients());
         m3 = gradient(x3, pointsLeft, usedPoly.getCoefficients());
 
-        dRight = defaultXLeft;
+        poly1pointRight1 = (m1 > 0)
+                            ? FuPoint<double>(x1 + laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) + laneWidth * sin(atan(-1 / m1)))
+                            : FuPoint<double>(x1 - laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) - laneWidth * sin(atan(-1 / m1)));
 
-        if (m1 > 0) {
-            pointRight1 = FuPoint<double>(x1 + dRight * cos(atan(-1 / m1)),
-                    usedPoly.at(x1) + dRight * sin(atan(-1 / m1)));
-        }
-        else {
-            pointRight1 = FuPoint<double>(x1 - dRight * cos(atan(-1 / m1)),
-                    usedPoly.at(x1) - dRight * sin(atan(-1 / m1)));
-        }
+        poly2pointRight1 = (m1 > 0)
+                            ? FuPoint<double>(x1 + 2 * laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) + 2 * laneWidth * sin(atan(-1 / m1)))
+                            : FuPoint<double>(x1 - 2 * laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) - 2 * laneWidth * sin(atan(-1 / m1)));
 
-        if (m2 > 0) {
-            pointRight2 = FuPoint<double>(x2 + dRight * cos(atan(-1 / m2)),
-                    usedPoly.at(x2) + dRight * sin(atan(-1 / m2)));
-        }
-        else {
-            pointRight2 = FuPoint<double>(x2 - dRight * cos(atan(-1 / m2)),
-                    usedPoly.at(x2) - dRight * sin(atan(-1 / m2)));
-        }
+        poly1pointRight2 = (m2 > 0)
+                            ? FuPoint<double>(x2 + laneWidth * cos(atan(-1 / m2)), usedPoly.at(x2) + laneWidth * sin(atan(-1 / m2)))
+                            : FuPoint<double>(x2 - laneWidth * cos(atan(-1 / m2)), usedPoly.at(x2) - laneWidth * sin(atan(-1 / m2)));
 
-        if (m3 > 0) {
-            pointRight3 = FuPoint<double>(x3 + dRight * cos(atan(-1 / m3)),
-                    usedPoly.at(x3) + dRight * sin(atan(-1 / m3)));
-        }
-        else {
-            pointRight3 = FuPoint<double>(x3 - dRight * cos(atan(-1 / m3)),
-                    usedPoly.at(x3) - dRight * sin(atan(-1 / m3)));
-        }
+        poly2pointRight2 = (m2 > 0)
+                            ? FuPoint<double>(x2 + 2 * laneWidth * cos(atan(-1 / m2)), usedPoly.at(x2) + 2 * laneWidth * sin(atan(-1 / m2)))
+                            : FuPoint<double>(x2 - 2 * laneWidth * cos(atan(-1 / m2)), usedPoly.at(x2) - 2 * laneWidth * sin(atan(-1 / m2)));
+
+        poly1pointRight3 = (m3 > 0)
+                            ? FuPoint<double>(x3 + laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) + laneWidth * sin(atan(-1 / m3)))
+                            : FuPoint<double>(x3 - laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) - laneWidth * sin(atan(-1 / m3)));
+
+        poly2pointRight3 = (m3 > 0)
+                            ? FuPoint<double>(x3 + 2 * laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) + 2 * laneWidth * sin(atan(-1 / m3)))
+                            : FuPoint<double>(x3 - 2 * laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) - 2 * laneWidth * sin(atan(-1 / m3)));
     }
     else if (position == CENTER) {
         usedPoly = polyCenter;
@@ -876,34 +930,29 @@ void cLaneDetectionFu::movePoly(ePosition position, NewtonPolynomial &poly1, New
         m2 = gradient(x2, pointsCenter, usedPoly.getCoefficients());
         m3 = gradient(x3, pointsCenter, usedPoly.getCoefficients());
 
-        dRight = defaultXCenter;
+        poly1pointRight1 = (m1 > 0)
+                            ? FuPoint<double>(x1 + laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) + laneWidth * sin(atan(-1 / m1)))
+                            : FuPoint<double>(x1 - laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) - laneWidth * sin(atan(-1 / m1)));
 
-        if (m1 > 0) {
-            pointRight1 = FuPoint<double>(x1 + dRight * cos(atan(-1 / m1)),
-                    usedPoly.at(x1) + dRight * sin(atan(-1 / m1)));
-        }
-        else {
-            pointRight1 = FuPoint<double>(x1 - dRight * cos(atan(-1 / m1)),
-                    usedPoly.at(x1) - dRight * sin(atan(-1 / m1)));
-        }
+        poly2pointRight1 = (m1 > 0)
+                            ? FuPoint<double>(x1 - laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) - laneWidth * sin(atan(-1 / m1)))
+                            : FuPoint<double>(x1 + laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) + laneWidth * sin(atan(-1 / m1)));
 
-        if (m2 > 0) {
-            pointRight2 = FuPoint<double>(x2 + dRight * cos(atan(-1 / m2)),
-                    usedPoly.at(x2) + dRight * sin(atan(-1 / m2)));
-        }
-        else {
-            pointRight2 = FuPoint<double>(x2 - dRight * cos(atan(-1 / m2)),
-                    usedPoly.at(x2) - dRight * sin(atan(-1 / m2)));
-        }
+        poly1pointRight2 = (m2 > 0)
+                            ? FuPoint<double>(x2 + laneWidth * cos(atan(-1 / m2)), usedPoly.at(x2) + laneWidth * sin(atan(-1 / m2)))
+                            : FuPoint<double>(x2 - laneWidth * cos(atan(-1 / m2)), usedPoly.at(x2) - laneWidth * sin(atan(-1 / m2)));
 
-        if (m3 > 0) {
-            pointRight3 = FuPoint<double>(x3 + dRight * cos(atan(-1 / m3)),
-                    usedPoly.at(x3) + dRight * sin(atan(-1 / m3)));
-        }
-        else {
-            pointRight3 = FuPoint<double>(x3 - dRight * cos(atan(-1 / m3)),
-                    usedPoly.at(x3) - dRight * sin(atan(-1 / m3)));
-        }
+        poly2pointRight2 = (m2 > 0)
+                            ? FuPoint<double>(x2 - laneWidth * cos(atan(-1 / m2)), usedPoly.at(x2) - laneWidth * sin(atan(-1 / m2)))
+                            : FuPoint<double>(x2 + laneWidth * cos(atan(-1 / m2)), usedPoly.at(x2) + laneWidth * sin(atan(-1 / m2)));
+
+        poly1pointRight3 = (m3 > 0)
+                            ? FuPoint<double>(x3 + laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) + laneWidth * sin(atan(-1 / m3)))
+                            : FuPoint<double>(x3 - laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) - laneWidth * sin(atan(-1 / m3)));
+
+        poly2pointRight3 = (m3 > 0)
+                            ? FuPoint<double>(x3 - laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) - laneWidth * sin(atan(-1 / m3)))
+                            : FuPoint<double>(x3 + laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) + laneWidth * sin(atan(-1 / m3)));
     }
     else if (position == RIGHT) {
         usedPoly = polyRight;
@@ -911,44 +960,47 @@ void cLaneDetectionFu::movePoly(ePosition position, NewtonPolynomial &poly1, New
         m2 = gradient(x2, pointsRight, usedPoly.getCoefficients());
         m3 = gradient(x3, pointsRight, usedPoly.getCoefficients());
 
-        dRight = defaultXCenter;
+        poly1pointRight1 = (m1 > 0)
+                            ? FuPoint<double>(x1 - laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) - laneWidth * sin(atan(-1 / m1)))
+                            : FuPoint<double>(x1 + laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) + laneWidth * sin(atan(-1 / m1)));
 
-        if (m1 > 0) {
-            pointRight1 = FuPoint<double>(x1 - dRight * cos(atan(-1 / m1)),
-                    usedPoly.at(x1) - dRight * sin(atan(-1 / m1)));
-        }
-        else {
-            pointRight1 = FuPoint<double>(x1 + dRight * cos(atan(-1 / m1)),
-                    usedPoly.at(x1) + dRight * sin(atan(-1 / m1)));
-        }
+        poly2pointRight1 = (m1 > 0)
+                            ? FuPoint<double>(x1 - 2 * laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) - 2 * laneWidth * sin(atan(-1 / m1)))
+                            : FuPoint<double>(x1 + 2 * laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) + 2 * laneWidth * sin(atan(-1 / m1)));
 
-        if (m2 > 0) {
-            pointRight2 = FuPoint<double>(x2 - dRight * cos(atan(-1 / m2)),
-                    usedPoly.at(x2) - dRight * sin(atan(-1 / m2)));
-        }
-        else {
-            pointRight2 = FuPoint<double>(x2 + dRight * cos(atan(-1 / m2)),
-                    usedPoly.at(x2) + dRight * sin(atan(-1 / m2)));
-        }
+        poly1pointRight2 = (m2 > 0)
+                            ? FuPoint<double>(x2 - laneWidth * cos(atan(-1 / m2)), usedPoly.at(x2) - laneWidth * sin(atan(-1 / m2)))
+                            : FuPoint<double>(x2 + laneWidth * cos(atan(-1 / m2)), usedPoly.at(x2) + laneWidth * sin(atan(-1 / m2)));
 
-        if (m3 > 0) {
-            pointRight3 = FuPoint<double>(x3 - dRight * cos(atan(-1 / m3)),
-                    usedPoly.at(x3) - dRight * sin(atan(-1 / m3)));
-        }
-        else {
-            pointRight3 = FuPoint<double>(x3 + dRight * cos(atan(-1 / m3)),
-                    usedPoly.at(x3) + dRight * sin(atan(-1 / m3)));
-        }
+        poly2pointRight2 = (m2 > 0)
+                            ? FuPoint<double>(x2 - 2 * laneWidth * cos(atan(-1 / m2)), usedPoly.at(x2) - 2 * laneWidth * sin(atan(-1 / m2)))
+                            : FuPoint<double>(x2 + 2 * laneWidth * cos(atan(-1 / m2)), usedPoly.at(x2) + 2 * laneWidth * sin(atan(-1 / m2)));
+
+        poly1pointRight3 = (m3 > 0)
+                            ? FuPoint<double>(x3 - laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) - laneWidth * sin(atan(-1 / m3)))
+                            : FuPoint<double>(x3 + laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) + laneWidth * sin(atan(-1 / m3)));
+
+        poly2pointRight3 = (m3 > 0)
+                            ? FuPoint<double>(x3 - 2 * laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) - 2 * laneWidth * sin(atan(-1 / m3)))
+                            : FuPoint<double>(x3 + 2 * laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) + 2 * laneWidth * sin(atan(-1 / m3)));
     }
 
-    // create the lane polynomial out of the shifted points
-    lanePoly.addDataXY(pointRight1);
-    lanePoly.addDataXY(pointRight2);
-    lanePoly.addDataXY(pointRight3);
+    poly1.addData(poly1pointRight1);
+    poly1.addData(poly1pointRight2);
+    poly1.addData(poly1pointRight3);
 
-    lanePolynomial.setLanePoly(lanePoly);
-    lanePolynomial.setDetected();
-    lanePolynomial.setLastUsedPosition(position);
+    poly2.addData(poly2pointRight1);
+    poly2.addData(poly2pointRight2);
+    poly2.addData(poly2pointRight3);
+
+    // create the lane polynomial out of the shifted points
+    // lanePoly.addDataXY(pointRight1);
+    // lanePoly.addDataXY(pointRight2);
+    // lanePoly.addDataXY(pointRight3);
+
+    // lanePolynomial.setLanePoly(lanePoly);
+    // lanePolynomial.setDetected();
+    // lanePolynomial.setLastUsedPosition(position);
 }
 
 bool cLaneDetectionFu::isInRange(FuPoint<int> &lanePoint, FuPoint<int> &p) {
