@@ -311,9 +311,9 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
 
         for(int i = minYPolyRoi; i < maxYRoi; i++)
         {
-            cv::Point pointPoly1 = cv::Point(i, poly1.at(i));
+            cv::Point pointPoly1 = cv::Point(poly1.at(i), i);
             cv::circle(transformedImagePaintable,pointPoly1,0,cv::Scalar(139,0,139),-1);
-            cv::Point pointPoly2 = cv::Point(i, poly2.at(i));
+            cv::Point pointPoly2 = cv::Point(poly2.at(i), i);
             cv::circle(transformedImagePaintable,pointPoly2,0,cv::Scalar(139,0,139),-1);
         }
 
@@ -363,6 +363,14 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
             cv::circle(transformedImagePaintableRansac,pointLocCenter,0,cv::Scalar(0,255,0),-1);
             cv::Point pointLocRight = cv::Point(polyRight.at(i), i);
             cv::circle(transformedImagePaintableRansac,pointLocRight,0,cv::Scalar(255,0,0),-1);
+        }
+
+        for(int i = minYPolyRoi; i < maxYRoi; i++)
+        {
+            cv::Point pointPoly1 = cv::Point(poly1.at(i), i);
+            cv::circle(transformedImagePaintableRansac,pointPoly1,0,cv::Scalar(139,0,139),-1);
+            cv::Point pointPoly2 = cv::Point(poly2.at(i), i);
+            cv::circle(transformedImagePaintableRansac,pointPoly2,0,cv::Scalar(139,0,139),-1);
         }
 
     pubRGBImageMsg(transformedImagePaintableRansac, image_publisher_ransac);
@@ -753,7 +761,7 @@ void cLaneDetectionFu::buildLaneMarkingsLists(
 
     for (FuPoint<int> laneMarking : sortedMarkings) {
 
-        if (polyDetectedRight) {
+        /*if (polyDetectedRight) {
             if (isInPolyRoi(poly1, laneMarking)) {
                 laneMarkingsCenter.push_back(laneMarking);
                 continue;
@@ -793,7 +801,7 @@ void cLaneDetectionFu::buildLaneMarkingsLists(
                 laneMarkingsRight.push_back(laneMarking);
                 continue;
             }
-        }
+        }*/
 
         if (laneMarkingsRight.size() > 0) {
             if (isInRange(laneMarkingsRight.at(laneMarkingsRight.size() - 1), laneMarking)) {
@@ -873,11 +881,11 @@ void cLaneDetectionFu::buildLaneMarkingsLists(
 }
 
 void cLaneDetectionFu::movePoly(ePosition position, NewtonPolynomial &poly1, NewtonPolynomial &poly2) {
-    int x1 = 20;
-    int x2 = 40;
-    int x3 = 70;
+    int x1 = minYPolyRoi+5;
+    int x2 = minYPolyRoi + ((proj_image_h-minYPolyRoi)/2);
+    int x3 = proj_image_h-5;
 
-    double laneWidth = 20.f;
+    double laneWidth = 45.f;
 
     FuPoint<double> poly1pointRight1;
     FuPoint<double> poly1pointRight2;
@@ -971,38 +979,38 @@ void cLaneDetectionFu::movePoly(ePosition position, NewtonPolynomial &poly1, New
         m2 = gradient(x2, pointsRight, usedPoly.getCoefficients());
         m3 = gradient(x3, pointsRight, usedPoly.getCoefficients());
 
-        poly1pointRight1 = (m1 > 0)
+        poly1pointRight1 = (m1 < 0)
                             ? FuPoint<double>(x1 - laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) - laneWidth * sin(atan(-1 / m1)))
                             : FuPoint<double>(x1 + laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) + laneWidth * sin(atan(-1 / m1)));
 
-        poly2pointRight1 = (m1 > 0)
+        poly2pointRight1 = (m1 < 0)
                             ? FuPoint<double>(x1 - 2 * laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) - 2 * laneWidth * sin(atan(-1 / m1)))
                             : FuPoint<double>(x1 + 2 * laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) + 2 * laneWidth * sin(atan(-1 / m1)));
 
-        poly1pointRight2 = (m2 > 0)
+        poly1pointRight2 = (m2 < 0)
                             ? FuPoint<double>(x2 - laneWidth * cos(atan(-1 / m2)), usedPoly.at(x2) - laneWidth * sin(atan(-1 / m2)))
                             : FuPoint<double>(x2 + laneWidth * cos(atan(-1 / m2)), usedPoly.at(x2) + laneWidth * sin(atan(-1 / m2)));
 
-        poly2pointRight2 = (m2 > 0)
+        poly2pointRight2 = (m2 < 0)
                             ? FuPoint<double>(x2 - 2 * laneWidth * cos(atan(-1 / m2)), usedPoly.at(x2) - 2 * laneWidth * sin(atan(-1 / m2)))
                             : FuPoint<double>(x2 + 2 * laneWidth * cos(atan(-1 / m2)), usedPoly.at(x2) + 2 * laneWidth * sin(atan(-1 / m2)));
 
-        poly1pointRight3 = (m3 > 0)
+        poly1pointRight3 = (m3 < 0)
                             ? FuPoint<double>(x3 - laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) - laneWidth * sin(atan(-1 / m3)))
                             : FuPoint<double>(x3 + laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) + laneWidth * sin(atan(-1 / m3)));
 
-        poly2pointRight3 = (m3 > 0)
+        poly2pointRight3 = (m3 < 0)
                             ? FuPoint<double>(x3 - 2 * laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) - 2 * laneWidth * sin(atan(-1 / m3)))
                             : FuPoint<double>(x3 + 2 * laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) + 2 * laneWidth * sin(atan(-1 / m3)));
     }
 
-    poly1.addData(poly1pointRight1);
-    poly1.addData(poly1pointRight2);
-    poly1.addData(poly1pointRight3);
+    poly1.addDataXY(poly1pointRight1);
+    poly1.addDataXY(poly1pointRight2);
+    poly1.addDataXY(poly1pointRight3);
 
-    poly2.addData(poly2pointRight1);
-    poly2.addData(poly2pointRight2);
-    poly2.addData(poly2pointRight3);
+    poly2.addDataXY(poly2pointRight1);
+    poly2.addDataXY(poly2pointRight2);
+    poly2.addDataXY(poly2pointRight3);
 
     // create the lane polynomial out of the shifted points
     // lanePoly.addDataXY(pointRight1);
@@ -1598,12 +1606,12 @@ void cLaneDetectionFu::detectLane() {
  * polynomials.
  */
 void cLaneDetectionFu::ransac() {
-    polyDetectedLeft = ransacInternal(LEFT, laneMarkingsLeft, bestPolyLeft,
+    /*polyDetectedLeft = ransacInternal(LEFT, laneMarkingsLeft, bestPolyLeft,
             polyLeft, supportersLeft, prevPolyLeft, pointsLeft);
 
     polyDetectedCenter = ransacInternal(CENTER, laneMarkingsCenter,
             bestPolyCenter, polyCenter, supportersCenter, prevPolyCenter,
-            pointsCenter);
+            pointsCenter);*/
 
     polyDetectedRight = ransacInternal(RIGHT, laneMarkingsRight, bestPolyRight,
             polyRight, supportersRight, prevPolyRight, pointsRight);
