@@ -233,6 +233,9 @@ class cLaneDetectionFu
 
         LanePolynomial lanePolynomial;
 
+        NewtonPolynomial poly1;
+        NewtonPolynomial poly2;
+
         int laneMarkingSquaredThreshold;
 
         int angleAdjacentLeg;
