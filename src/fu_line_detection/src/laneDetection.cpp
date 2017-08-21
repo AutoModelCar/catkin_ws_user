@@ -311,9 +311,9 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
 
         for(int i = minYPolyRoi; i < maxYRoi; i++)
         {
-            cv::Point pointPoly1 = cv::Point(poly1.at(i), i);
+            cv::Point pointPoly1 = cv::Point(i, poly1.at(i));
             cv::circle(transformedImagePaintable,pointPoly1,0,cv::Scalar(139,0,139),-1);
-            cv::Point pointPoly2 = cv::Point(poly2.at(i), i);
+            cv::Point pointPoly2 = cv::Point(i, poly2.at(i));
             cv::circle(transformedImagePaintable,pointPoly2,0,cv::Scalar(139,0,139),-1);
         }
 
