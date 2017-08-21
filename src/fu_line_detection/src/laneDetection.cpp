@@ -873,11 +873,11 @@ void cLaneDetectionFu::buildLaneMarkingsLists(
 }
 
 void cLaneDetectionFu::movePoly(ePosition position, NewtonPolynomial &poly1, NewtonPolynomial &poly2) {
-    double x1 = 0.05;
-    double x2 = 0.4;
-    double x3 = 1.0;
+    int x1 = 20;
+    int x2 = 40;
+    int x3 = 70;
 
-    double laneWidth = 2.f;
+    double laneWidth = 20.f;
 
     FuPoint<double> poly1pointRight1;
     FuPoint<double> poly1pointRight2;
