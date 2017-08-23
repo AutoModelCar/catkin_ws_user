@@ -233,8 +233,9 @@ class cLaneDetectionFu
 
         LanePolynomial lanePolynomial;
 
-        NewtonPolynomial poly1;
-        NewtonPolynomial poly2;
+        NewtonPolynomial movedPolyLeft;
+        NewtonPolynomial movedPolyCenter;
+        NewtonPolynomial movedPolyRight;
 
         int laneMarkingSquaredThreshold;
 
@@ -270,7 +271,7 @@ class cLaneDetectionFu
 
         void buildLaneMarkingsLists(const std::vector<FuPoint<int>> &laneMarkings);
 
-        void movePoly(ePosition position, NewtonPolynomial &poly1, NewtonPolynomial &poly2);
+        void generateMovedPolynomials();
 
         bool isInRange(FuPoint<int> &lanePoint, FuPoint<int> &p);
 
