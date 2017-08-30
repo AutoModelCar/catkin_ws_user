@@ -162,6 +162,11 @@ cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh)
     //the outer vector represents rows on image, inner vector is vector of line segments of one row, usualy just one line segment
     //we should generate this only once in the beginning! or even just have it pregenerated for our cam
     scanlines = getScanlines();
+
+    // TODO: remove rqt settings for these variables
+    defaultXLeft = 0;
+    defaultXCenter = 0;
+    defaultXRight = 0;
 }
 
 cLaneDetectionFu::~cLaneDetectionFu()
@@ -321,7 +326,7 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
             cv::circle(transformedImagePaintable,pointPoly3,0,cv::Scalar(255,128,0),-1);
         }
 
-        /*cv::Point2d p1l(defaultXLeft,minYPolyRoi);
+        cv::Point2d p1l(defaultXLeft,minYPolyRoi);
         cv::Point2d p2l(defaultXLeft,maxYRoi-1);
         cv::line(transformedImagePaintable,p1l,p2l,cv::Scalar(0,0,255));
 
@@ -333,7 +338,7 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
         cv::Point2d p2r(defaultXRight,maxYRoi-1);
         cv::line(transformedImagePaintable,p1r,p2r,cv::Scalar(255,0,0));
 
-        cv::Point2d p1(proj_image_w_half-(roi_bottom_w/2),maxYRoi-1);
+        /*cv::Point2d p1(proj_image_w_half-(roi_bottom_w/2),maxYRoi-1);
         cv::Point2d p2(proj_image_w_half+(roi_bottom_w/2),maxYRoi-1);
         cv::Point2d p3(proj_image_w_half+(roi_top_w/2),minYPolyRoi);
         cv::Point2d p4(proj_image_w_half-(roi_top_w/2),minYPolyRoi);
@@ -693,71 +698,78 @@ std::vector<FuPoint<int>> cLaneDetectionFu::extractLaneMarkings(const std::vecto
 
 void cLaneDetectionFu::findLanePositions(const std::vector<FuPoint<int>> &laneMarkings) {
     if (defaultXLeft > 0) {
-	return;
+        return;
     }
 
-    int score[proj_image_w];
+    vector<int> score(proj_image_w);
+    fill(score.begin(), score.end(), 0);
 
     for (FuPoint<int> laneMarking : laneMarkings) {
-	if (laneMarking.getY() < 50) {
-		return;
-	}
+        /*if (laneMarking.getY() < 50) {
+            break;
+        }*/
 
-	score[laneMarking.getX()]++;
+        score[laneMarking.getX()]++;
+    }
+
+    for (int i = 0; i < score.size(); i++) {
+        ROS_ERROR("%d, %d", i, score[i]);
     }
 
     int max1 = 0;
     int max2 = 0;
     int max3 = 0;
-    for (int i = 1; i < score.length; i++) {
-	if (score[i] > score[max1]) {
-		max3 = max2;
-		max2 = max1;
-		max1 = i;
-		continue;
-	}
-	if (score[i] > score[max2]) {
-		max3 = max2;
-		max2 = i;
-		continue;
-	}
-	if (score[i] > score[max1]) {
-		max3 = i;
-		continue;
-	}
+    for (int i = 1; i < score.size(); i++) {
+        if (score[i] > score[max1]) {
+            max3 = max2;
+            max2 = max1;
+            max1 = i;
+            continue;
+        }
+        if (score[i] > score[max2]) {
+            max3 = max2;
+            max2 = i;
+            continue;
+        }
+        if (score[i] > score[max1]) {
+            max3 = i;
+            continue;
+        }
     }
 
     if (max1 < max2 && max1 < max3) {
-	defaultXLeft = max1;
+        defaultXLeft = max1;
 
-	if (max2 < max3) {
-		defaultXCenter = max2;
-		defaultXRight = max3;
-	} else {
-		defaultXRight = max2;
-		defaultXCenter = max3;
-	}
+        if (max2 < max3) {
+            defaultXCenter = max2;
+            defaultXRight = max3;
+        } else {
+            defaultXRight = max2;
+            defaultXCenter = max3;
+        }
     } else if (max2 < max1 && max2 < max3) {
-	defaultXCenter = max2;
+        defaultXCenter = max2;
 
-	if (max1 < max3) {
-		defaultXCenter = max1;
-		defaultXRight = max3;
-	} else {
-		defaultXRight = max1;
-		defaultXCenter = max3;
-	}
+        if (max1 < max3) {
+            defaultXCenter = max1;
+            defaultXRight = max3;
+        } else {
+            defaultXRight = max1;
+            defaultXCenter = max3;
+        }
     } else {
-	defaultXRight = max3;
+        defaultXRight = max3;
 
-	if (max1 < max2) {
-		defaultXCenter = max1;
-		defaultXRight = max2;
-	} else {
-		defaultXRight = max1;
-		defaultXCenter = max2;
-	}
+        if (max1 < max2) {
+            defaultXCenter = max1;
+            defaultXRight = max2;
+        } else {
+            defaultXRight = max1;
+            defaultXCenter = max2;
+        }
     }
+
+    ROS_ERROR("left: %d, center: %d, right: %d", defaultXLeft, defaultXCenter, defaultXRight);
 }
 
 /**
@@ -1057,7 +1069,7 @@ void cLaneDetectionFu::generateMovedPolynomials() {
         m3 = gradient(x3, pointsCenter, usedPoly.getCoefficients());
 
         if (!polyDetectedLeft) {
-            ROS_ERROR("%f, %f, %f", m1, m2, m3);
+            //ROS_ERROR("%f, %f, %f", m1, m2, m3);
 
             movedLeft = true;
 
@@ -2061,6 +2073,11 @@ void cLaneDetectionFu::config_callback(line_detection_fu::LaneDetectionConfig &c
     scanlinesMaxCount = config.scanlinesMaxCount;
 
     scanlines = getScanlines();
+
+    // TODO: remove rqt settings for these variables
+    defaultXLeft = 0;
+    defaultXCenter = 0;
+    defaultXRight = 0;
 }
 
 int main(int argc, char **argv)
