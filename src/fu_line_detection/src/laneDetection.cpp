@@ -164,9 +164,9 @@ cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh)
     scanlines = getScanlines();
 
     // TODO: remove rqt settings for these variables
-    defaultXLeft = 0;
-    defaultXCenter = 0;
-    defaultXRight = 0;
+//    defaultXLeft = 0;
+//    defaultXCenter = 0;
+//    defaultXRight = 0;
 }
 
 cLaneDetectionFu::~cLaneDetectionFu()
@@ -282,7 +282,7 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
     #endif
     //---------------------- END DEBUG OUTPUT LANE MARKINGS ------------------------------//
 
-    findLanePositions(laneMarkings);
+    //findLanePositions(laneMarkings);
 
     // start actual execution
     buildLaneMarkingsLists(laneMarkings);
@@ -1406,7 +1406,7 @@ void cLaneDetectionFu::createLanePoly(ePosition position) {
 
     if (position == LEFT) {
         usedPoly = polyLeft;
-        dRight = defaultXLeft-5;
+        dRight = 10;
     }
     else if (position == CENTER) {
         usedPoly = polyCenter;
@@ -2075,9 +2075,9 @@ void cLaneDetectionFu::config_callback(line_detection_fu::LaneDetectionConfig &c
     scanlines = getScanlines();
 
     // TODO: remove rqt settings for these variables
-    defaultXLeft = 0;
-    defaultXCenter = 0;
-    defaultXRight = 0;
+//    defaultXLeft = 0;
+//    defaultXCenter = 0;
+//    defaultXRight = 0;
 }
 
 int main(int argc, char **argv)
