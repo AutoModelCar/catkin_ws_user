@@ -271,6 +271,8 @@ class cLaneDetectionFu
 
         void buildLaneMarkingsLists(const std::vector<FuPoint<int>> &laneMarkings);
 
+        void findLanePositions(const std::vector<FuPoint<int>> &laneMarkings);
+
         void generateMovedPolynomials();
 
         bool isInRange(FuPoint<int> &lanePoint, FuPoint<int> &p);

@@ -277,6 +277,8 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
     #endif
     //---------------------- END DEBUG OUTPUT LANE MARKINGS ------------------------------//
 
+    findLanePositions(laneMarkings);
+
     // start actual execution
     buildLaneMarkingsLists(laneMarkings);
 
@@ -679,9 +681,84 @@ std::vector<FuPoint<int>> cLaneDetectionFu::extractLaneMarkings(const std::vecto
             }
         }
     }
+
+    // sort the lane marking edge points
+    std::sort(result.begin(), result.end(),
+              [](FuPoint<int> a, FuPoint<int> b) {
+                  return a.getY() > b.getY();
+              });
+
     return result;
 }
 
+void cLaneDetectionFu::findLanePositions(const std::vector<FuPoint<int>> &laneMarkings) {
+    if (defaultXLeft > 0) {
+	return;
+    }
+
+    int score[proj_image_w];
+
+    for (FuPoint<int> laneMarking : laneMarkings) {
+	if (laneMarking.getY() < 50) {
+		return;
+	}
+
+	score[laneMarking.getX()]++;
+    }
+
+    int max1 = 0;
+    int max2 = 0;
+    int max3 = 0;
+    for (int i = 1; i < score.length; i++) {
+	if (score[i] > score[max1]) {
+		max3 = max2;
+		max2 = max1;
+		max1 = i;
+		continue;
+	}
+	if (score[i] > score[max2]) {
+		max3 = max2;
+		max2 = i;
+		continue;
+	}
+	if (score[i] > score[max1]) {
+		max3 = i;
+		continue;
+	}
+    }
+
+    if (max1 < max2 && max1 < max3) {
+	defaultXLeft = max1;
+
+	if (max2 < max3) {
+		defaultXCenter = max2;
+		defaultXRight = max3;
+	} else {
+		defaultXRight = max2;
+		defaultXCenter = max3;
+	}
+    } else if (max2 < max1 && max2 < max3) {
+	defaultXCenter = max2;
+
+	if (max1 < max3) {
+		defaultXCenter = max1;
+		defaultXRight = max3;
+	} else {
+		defaultXRight = max1;
+		defaultXCenter = max3;
+	}
+    } else {
+	defaultXRight = max3;
+
+	if (max1 < max2) {
+		defaultXCenter = max1;
+		defaultXRight = max2;
+	} else {
+		defaultXRight = max1;
+		defaultXCenter = max2;
+	}
+    }
+}
 
 /**
  * Creates three vectors of lane marking points out of the given lane marking
@@ -751,15 +828,7 @@ void cLaneDetectionFu::buildLaneMarkingsLists(
 
     generateMovedPolynomials();
 
-    // sort the lane marking edge points
-    std::vector<FuPoint<int>> sortedMarkings = laneMarkings;
-
-    std::sort(sortedMarkings.begin(), sortedMarkings.end(),
-              [](FuPoint<int> a, FuPoint<int> b) {
-                  return a.getY() > b.getY();
-              });
-
-    for (FuPoint<int> laneMarking : sortedMarkings) {
+    for (FuPoint<int> laneMarking : laneMarkings) {
 
         if (movedPolyLeft.isInitialized()) {
             if (isInPolyRoi(movedPolyLeft, laneMarking)) {
