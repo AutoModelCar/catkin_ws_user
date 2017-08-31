@@ -123,9 +123,9 @@ class cLaneDetectionFu
          * straight lane would show up in the relative coordinate system with the
          * car standing in the center of the right lane.
          */
-        int defaultXLeft;
-        int defaultXCenter;
-        int defaultXRight;
+        int defaultXLeft = 0;
+        int defaultXCenter = 0;
+        int defaultXRight = 0;
 
         /**
          * The maximum distance of a point to a polynomial so that it counts as a
@@ -271,7 +271,7 @@ class cLaneDetectionFu
 
         void buildLaneMarkingsLists(const std::vector<FuPoint<int>> &laneMarkings);
 
-        void findLanePositions(const std::vector<FuPoint<int>> &laneMarkings);
+        void findLanePositions(vector<FuPoint<int>> &laneMarkings);
 
         void generateMovedPolynomials();
 

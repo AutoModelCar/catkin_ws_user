@@ -45,10 +45,6 @@ cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh)
     priv_nh_.param<int>(node_name+"/minYDefaultRoi", minYDefaultRoi, 39);
     priv_nh_.param<int>(node_name+"/minYPolyRoi", minYPolyRoi, 39);
 
-    priv_nh_.param<int>(node_name+"/defaultXLeft", defaultXLeft, 10);
-    priv_nh_.param<int>(node_name+"/defaultXCenter", defaultXCenter, 30);
-    priv_nh_.param<int>(node_name+"/defaultXRight", defaultXRight, 50);
-
     priv_nh_.param<int>(node_name+"/interestDistancePoly", interestDistancePoly, 10);
     priv_nh_.param<int>(node_name+"/interestDistanceDefault", interestDistanceDefault, 10);
     
@@ -696,77 +692,92 @@ std::vector<FuPoint<int>> cLaneDetectionFu::extractLaneMarkings(const std::vecto
     return result;
 }
 
-void cLaneDetectionFu::findLanePositions(const std::vector<FuPoint<int>> &laneMarkings) {
+/**
+ * Calculates x positions of the lanes. Lane markings of first 10 rows from the bottom
+ * of the image are used. Car must start between right and center lane because all lane
+ * marking points in left half of the image are considered as possible lane edge points
+ * of center lane (analog: right half of image for right lane). Lane marking points in
+ * range of other lane marking points are supporters because they form a line. The x-value
+ * of found lane points with maximum supporters will be used. This ensures that non-lane
+ * points are ignored. Start position of left lane is calculated after start positions
+ * of center and right lanes are found.
+ */
+void cLaneDetectionFu::findLanePositions(vector<FuPoint<int>> &laneMarkings) {
+    // defaultXLeft is calculated after center and right lane position is found
     if (defaultXLeft > 0) {
         return;
     }
 
-    vector<int> score(proj_image_w);
-    fill(score.begin(), score.end(), 0);
+    // counts how many lane marking points form a line with point in centerStart
+    // at same index
+    vector<int> centerSupporter;
+    vector<int> rightSupporter;
 
-    for (FuPoint<int> laneMarking : laneMarkings) {
-        /*if (laneMarking.getY() < 50) {
+    // possible start points of center lane
+    vector<FuPoint<int>*> centerStart;
+    vector<FuPoint<int>*> rightStart;
+
+    for (int j = 0; j < laneMarkings.size(); j++) {
+        FuPoint<int>* laneMarking = &laneMarkings.at(j);
+
+        if (laneMarking->getY() > maxYRoi) {
+            continue;
+        }
+        if (laneMarking->getY() < proj_image_h - (proj_image_h - maxYRoi) - 10) {
             break;
-        }*/
+        }
 
-        score[laneMarking.getX()]++;
+        bool isSupporter = false;
+        if (laneMarking->getX() < proj_image_w_half + proj_image_horizontal_offset) {
+            for (int i = 0; i < centerStart.size(); i++) {
+                if (isInRange(*centerStart.at(i), *laneMarking)) {
+                    isSupporter = true;
+                    centerSupporter.at(i)++;
+                    break;
+                }
+            }
+
+            if (!isSupporter) {
+                centerStart.push_back(laneMarking);
+                centerSupporter.push_back(0);
+            }
+        } else {
+            for (int i = 0; i < rightStart.size(); i++) {
+                if (isInRange(*rightStart.at(i), *laneMarking)) {
+                    isSupporter = true;
+                    rightSupporter.at(i)++;
+                    break;
+                }
+            }
+
+            if (!isSupporter) {
+                rightStart.push_back(laneMarking);
+                rightSupporter.push_back(0);
+            }
+        }
     }
 
-    for (int i = 0; i < score.size(); i++) {
-        ROS_ERROR("%d, %d", i, score[i]);
-    }
+    // use x-value of lane marking point with most (and at least 3) supporters
+    if (centerStart.size() > 0) {
+        vector<int>::iterator maxCenterElement = max_element(centerSupporter.begin(), centerSupporter.end());
 
-    int max1 = 0;
-    int max2 = 0;
-    int max3 = 0;
-    for (int i = 1; i < score.size(); i++) {
-        if (score[i] > score[max1]) {
-            max3 = max2;
-            max2 = max1;
-            max1 = i;
-            continue;
-        }
-        if (score[i] > score[max2]) {
-            max3 = max2;
-            max2 = i;
-            continue;
-        }
-        if (score[i] > score[max1]) {
-            max3 = i;
-            continue;
+        if (*maxCenterElement > 3) {
+            int position = distance(centerSupporter.begin(), maxCenterElement);
+            defaultXCenter = centerStart.at(position)->getX();
         }
     }
 
-    if (max1 < max2 && max1 < max3) {
-        defaultXLeft = max1;
+    if (rightStart.size() > 0) {
+        vector<int>::iterator maxRightElement = max_element(rightSupporter.begin(), rightSupporter.end());
 
-        if (max2 < max3) {
-            defaultXCenter = max2;
-            defaultXRight = max3;
-        } else {
-            defaultXRight = max2;
-            defaultXCenter = max3;
+        if (*maxRightElement > 3) {
+            int position = distance(rightSupporter.begin(), maxRightElement);
+            defaultXRight = rightStart.at(position)->getX();
         }
-    } else if (max2 < max1 && max2 < max3) {
-        defaultXCenter = max2;
+    }
 
-        if (max1 < max3) {
-            defaultXCenter = max1;
-            defaultXRight = max3;
-        } else {
-            defaultXRight = max1;
-            defaultXCenter = max3;
-        }
-    } else {
-        defaultXRight = max3;
-
-        if (max1 < max2) {
-            defaultXCenter = max1;
-            defaultXRight = max2;
-        } else {
-            defaultXRight = max1;
-            defaultXCenter = max2;
-        }
+    if (defaultXCenter > 0 && defaultXRight > 0) {
+        defaultXLeft = defaultXCenter - (defaultXRight - defaultXCenter);
     }
 
     ROS_ERROR("left: %d, center: %d, right: %d", defaultXLeft, defaultXCenter, defaultXRight);
@@ -2047,9 +2058,6 @@ void cLaneDetectionFu::pubGradientAngle()
 void cLaneDetectionFu::config_callback(line_detection_fu::LaneDetectionConfig &config, uint32_t level) {
     ROS_ERROR("Reconfigure Request");
 
-    defaultXLeft = config.defaultXLeft;
-    defaultXCenter = config.defaultXCenter;
-    defaultXRight = config.defaultXRight;
     interestDistancePoly = config.interestDistancePoly;
     interestDistanceDefault= config.interestDistanceDefault;
     iterationsRansac = config.iterationsRansac;
@@ -2073,11 +2081,6 @@ void cLaneDetectionFu::config_callback(line_detection_fu::LaneDetectionConfig &c
     scanlinesMaxCount = config.scanlinesMaxCount;
 
     scanlines = getScanlines();
-
-    // TODO: remove rqt settings for these variables
-    defaultXLeft = 0;
-    defaultXCenter = 0;
-    defaultXRight = 0;
 }
 
 int main(int argc, char **argv)
