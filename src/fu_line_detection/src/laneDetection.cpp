@@ -158,11 +158,6 @@ cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh)
     //the outer vector represents rows on image, inner vector is vector of line segments of one row, usualy just one line segment
     //we should generate this only once in the beginning! or even just have it pregenerated for our cam
     scanlines = getScanlines();
-
-    // TODO: remove rqt settings for these variables
-    defaultXLeft = 0;
-    defaultXCenter = 0;
-    defaultXRight = 0;
 }
 
 cLaneDetectionFu::~cLaneDetectionFu()
@@ -1417,7 +1412,7 @@ void cLaneDetectionFu::createLanePoly(ePosition position) {
 
     if (position == LEFT) {
         usedPoly = polyLeft;
-        dRight = defaultXLeft-5;
+        dRight = 10;
     }
     else if (position == CENTER) {
         usedPoly = polyCenter;
