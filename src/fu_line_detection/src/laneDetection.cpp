@@ -946,7 +946,20 @@ void cLaneDetectionFu::buildLaneMarkingsLists(
     }
 }
 
-void cLaneDetectionFu::generateMovedPolynomials() {
+void shiftPoint(FuPoint<double> &p, double m, double offset, int x, int y)
+{
+    if (m < 0) {
+        p.setX(x - offset * cos(atan(-1 / m)));
+        p.setY(y - offset * sin(atan(-1 / m)));
+        return;
+    }
+    p.setX(x + offset * cos(atan(-1 / m)));
+    p.setY(y + offset * sin(atan(-1 / m)));
+    return;
+}
+
+void cLaneDetectionFu::generateMovedPolynomials()
+{
     if ((!polyDetectedLeft && !polyDetectedCenter && !polyDetectedRight)
             || (polyDetectedLeft && polyDetectedCenter && polyDetectedRight)) {
         return;
@@ -958,17 +971,17 @@ void cLaneDetectionFu::generateMovedPolynomials() {
 
     double laneWidth = 45.f;
 
-    FuPoint<double> pointLeft1;
-    FuPoint<double> pointLeft2;
-    FuPoint<double> pointLeft3;
+    FuPoint<double> pointLeft1 = FuPoint<double>();
+    FuPoint<double> pointLeft2 = FuPoint<double>();
+    FuPoint<double> pointLeft3 = FuPoint<double>();
 
-    FuPoint<double> pointCenter1;
-    FuPoint<double> pointCenter2;
-    FuPoint<double> pointCenter3;
+    FuPoint<double> pointCenter1 = FuPoint<double>();
+    FuPoint<double> pointCenter2 = FuPoint<double>();
+    FuPoint<double> pointCenter3 = FuPoint<double>();
 
-    FuPoint<double> pointRight1;
-    FuPoint<double> pointRight2;
-    FuPoint<double> pointRight3;
+    FuPoint<double> pointRight1 = FuPoint<double>();
+    FuPoint<double> pointRight2 = FuPoint<double>();
+    FuPoint<double> pointRight3 = FuPoint<double>();
 
     bool movedLeft = false;
     bool movedCenter = false;
@@ -1000,6 +1013,10 @@ void cLaneDetectionFu::generateMovedPolynomials() {
 
         movedCenter = true;
 
+        shiftPoint(pointCenter1,m1, laneWidth, x1, usedPoly.at(x1));
+        shiftPoint(pointCenter2,m2, laneWidth, x2, usedPoly.at(x2));
+        shiftPoint(pointCenter3,m3, laneWidth, x3, usedPoly.at(x3));
+/*
         pointCenter1 = (m1 < 0)
                            ? FuPoint<double>(x1 - laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) - laneWidth * sin(atan(-1 / m1)))
                            : FuPoint<double>(x1 + laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) + laneWidth * sin(atan(-1 / m1)));
@@ -1013,10 +1030,15 @@ void cLaneDetectionFu::generateMovedPolynomials() {
         pointCenter3 = (m3 < 0)
                            ? FuPoint<double>(x3 - laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) - laneWidth * sin(atan(-1 / m3)))
                            : FuPoint<double>(x3 + laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) + laneWidth * sin(atan(-1 / m3)));
-
+*/
         if (!polyDetectedLeft) {
             movedLeft = true;
 
+            shiftPoint(pointLeft1,m1, 2 * laneWidth, x1, usedPoly.at(x1));
+            shiftPoint(pointLeft2,m2, 2 * laneWidth, x2, usedPoly.at(x2));
+            shiftPoint(pointLeft3,m3, 2 * laneWidth, x3, usedPoly.at(x3));
+
+/*
             pointLeft1 = (m1 < 0)
                          ? FuPoint<double>(x1 - 2 * laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) - 2 * laneWidth * sin(atan(-1 / m1)))
                          : FuPoint<double>(x1 + 2 * laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) + 2 * laneWidth * sin(atan(-1 / m1)));
@@ -1029,6 +1051,7 @@ void cLaneDetectionFu::generateMovedPolynomials() {
             pointLeft3 = (m3 < 0)
                          ? FuPoint<double>(x3 - 2 * laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) - 2 * laneWidth * sin(atan(-1 / m3)))
                          : FuPoint<double>(x3 + 2 * laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) + 2 * laneWidth * sin(atan(-1 / m3)));
+*/
         }
     }
     else if (polyDetectedLeft && !polyDetectedCenter) {
@@ -1039,6 +1062,12 @@ void cLaneDetectionFu::generateMovedPolynomials() {
 
         movedCenter = true;
 
+        shiftPoint(pointCenter1,m1, -laneWidth, x1, usedPoly.at(x1));
+        shiftPoint(pointCenter2,m2, -laneWidth, x2, usedPoly.at(x2));
+        shiftPoint(pointCenter3,m3, -laneWidth, x3, usedPoly.at(x3));
+
+
+/*
         pointCenter1 = (m1 < 0)
                             ? FuPoint<double>(x1 + laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) + laneWidth * sin(atan(-1 / m1)))
                             : FuPoint<double>(x1 - laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) - laneWidth * sin(atan(-1 / m1)));
@@ -1050,10 +1079,15 @@ void cLaneDetectionFu::generateMovedPolynomials() {
         pointCenter3 = (m3 < 0)
                             ? FuPoint<double>(x3 + laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) + laneWidth * sin(atan(-1 / m3)))
                             : FuPoint<double>(x3 - laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) - laneWidth * sin(atan(-1 / m3)));
-
+*/
         if (!polyDetectedRight) {
             movedRight = true;
 
+            shiftPoint(pointRight1,m1, -laneWidth, x1, usedPoly.at(x1));
+            shiftPoint(pointRight2,m2, -laneWidth, x2, usedPoly.at(x2));
+            shiftPoint(pointRight3,m3, -laneWidth, x3, usedPoly.at(x3));
+
+/*
             pointRight1 = (m1 < 0)
                           ? FuPoint<double>(x1 + 2 * laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) + laneWidth * sin(atan(-1 / m1)))
                           : FuPoint<double>(x1 - 2 * laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) - laneWidth * sin(atan(-1 / m1)));
@@ -1065,7 +1099,7 @@ void cLaneDetectionFu::generateMovedPolynomials() {
             pointRight3 = (m3 < 0)
                           ? FuPoint<double>(x3 + 2 * laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) + laneWidth * sin(atan(-1 / m3)))
                           : FuPoint<double>(x3 - 2 * laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) - laneWidth * sin(atan(-1 / m3)));
-
+*/
         }
     }
     else if (polyDetectedCenter) {
@@ -1079,6 +1113,11 @@ void cLaneDetectionFu::generateMovedPolynomials() {
 
             movedLeft = true;
 
+            shiftPoint(pointLeft1,m1, laneWidth, x1, usedPoly.at(x1));
+            shiftPoint(pointLeft2,m2, laneWidth, x2, usedPoly.at(x2));
+            shiftPoint(pointLeft3,m3, laneWidth, x3, usedPoly.at(x3));
+
+/*
             pointLeft1 = (m1 < 0)
                            ? FuPoint<double>(x1 - laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) - laneWidth * sin(atan(-1 / m1)))
                            : FuPoint<double>(x1 + laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) + laneWidth * sin(atan(-1 / m1)));
@@ -1090,11 +1129,17 @@ void cLaneDetectionFu::generateMovedPolynomials() {
             pointLeft3 = (m3 < 0)
                            ? FuPoint<double>(x3 - laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) - laneWidth * sin(atan(-1 / m3)))
                            : FuPoint<double>(x3 + laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) + laneWidth * sin(atan(-1 / m3)));
+*/
         }
 
         if (!polyDetectedRight) {
             movedRight = true;
 
+            shiftPoint(pointRight1,m1, -laneWidth, x1, usedPoly.at(x1));
+            shiftPoint(pointRight2,m2, -laneWidth, x2, usedPoly.at(x2));
+            shiftPoint(pointRight3,m3, -laneWidth, x3, usedPoly.at(x3));
+
+/*
             pointRight1 = (m1 < 0)
                          ? FuPoint<double>(x1 + laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) + laneWidth * sin(atan(-1 / m1)))
                          : FuPoint<double>(x1 - laneWidth * cos(atan(-1 / m1)), usedPoly.at(x1) - laneWidth * sin(atan(-1 / m1)));
@@ -1106,6 +1151,7 @@ void cLaneDetectionFu::generateMovedPolynomials() {
             pointRight3 = (m3 < 0)
                          ? FuPoint<double>(x3 + laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) + laneWidth * sin(atan(-1 / m3)))
                          : FuPoint<double>(x3 - laneWidth * cos(atan(-1 / m3)), usedPoly.at(x3) - laneWidth * sin(atan(-1 / m3)));
+*/
         }
     }
 

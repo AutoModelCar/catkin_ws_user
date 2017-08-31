@@ -47,6 +47,10 @@ public:
 	MemberType getX() const { return x; }
 	MemberType getY() const { return y; }
 
+	void setX(MemberType x) { this->x = x; }
+	void setY(MemberType y) { this->y = y; }
+
+
 	std::string toString() const {
 		std::stringstream result;
 		result << "FuVector {" << getX() << ", " << getY() << "}";
