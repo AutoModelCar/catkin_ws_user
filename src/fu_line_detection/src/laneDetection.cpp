@@ -1438,6 +1438,63 @@ ePosition cLaneDetectionFu::maxProportion() {
 void cLaneDetectionFu::createLanePoly(ePosition position) {
     lanePoly.clear();
 
+    double laneWidth = (defaultXRight - defaultXCenter) / 2; //45.f;
+    double x1 = minYPolyRoi + 5;
+    double x2 = minYPolyRoi + ((proj_image_h-minYPolyRoi) / 2);
+    double x3 = proj_image_h - 5;
+
+    FuPoint<double> point1 = FuPoint<double>();
+    FuPoint<double> point2 = FuPoint<double>();
+    FuPoint<double> point3 = FuPoint<double>();
+
+    NewtonPolynomial usedPoly;
+
+    double m1 = 0;
+    double m2 = 0;
+    double m3 = 0;
+
+    if (position == LEFT) {
+        usedPoly = polyLeft;
+        m1 = gradient(x1, pointsLeft, usedPoly.getCoefficients());
+        m2 = gradient(x2, pointsLeft, usedPoly.getCoefficients());
+        m3 = gradient(x3, pointsLeft, usedPoly.getCoefficients());
+
+        shiftPoint(point1,m1, laneWidth, x1, usedPoly.at(x1));
+        shiftPoint(point2,m2, laneWidth, x2, usedPoly.at(x2));
+        shiftPoint(point3,m3, laneWidth, x3, usedPoly.at(x3));
+    }
+    else if (position == CENTER) {
+        usedPoly = polyCenter;
+        m1 = gradient(x1, pointsCenter, usedPoly.getCoefficients());
+        m2 = gradient(x2, pointsCenter, usedPoly.getCoefficients());
+        m3 = gradient(x3, pointsCenter, usedPoly.getCoefficients());
+
+        shiftPoint(point1,m1, laneWidth, x1, usedPoly.at(x1));
+        shiftPoint(point2,m2, laneWidth, x2, usedPoly.at(x2));
+        shiftPoint(point3,m3, laneWidth, x3, usedPoly.at(x3));
+    }
+    else if (position == RIGHT) {
+        usedPoly = polyRight;
+        m1 = gradient(x1, pointsRight, usedPoly.getCoefficients());
+        m2 = gradient(x2, pointsRight, usedPoly.getCoefficients());
+        m3 = gradient(x3, pointsRight, usedPoly.getCoefficients());
+
+        shiftPoint(point1,m1, laneWidth, x1, usedPoly.at(x1));
+        shiftPoint(point2,m2, laneWidth, x2, usedPoly.at(x2));
+        shiftPoint(point3,m3, laneWidth, x3, usedPoly.at(x3));
+    }
+
+    // create the lane polynomial out of the shifted points
+    lanePoly.addDataXY(point1);
+    lanePoly.addDataXY(point2);
+    lanePoly.addDataXY(point3);
+
+    lanePolynomial.setLanePoly(lanePoly);
+    lanePolynomial.setDetected();
+    lanePolynomial.setLastUsedPosition(position);
+/*
+    lanePoly.clear();
+
     double coef = 1.2;
 
     double x1 = minYPolyRoi+5;
@@ -1482,6 +1539,7 @@ void cLaneDetectionFu::createLanePoly(ePosition position) {
     lanePolynomial.setLanePoly(lanePoly);
     lanePolynomial.setDetected();
     lanePolynomial.setLastUsedPosition(position);
+*/
 }
 
 //original method, should be better, but doesn't work correctly in our case when RIGHT polynomial is used
