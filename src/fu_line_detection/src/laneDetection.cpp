@@ -440,6 +440,15 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
 
         cv::Point oppositeLegPoint = cv::Point(proj_image_w_half + oppositeLeg, proj_image_h - adjacentLeg);
         cv::line(transformedImagePaintableLaneModel, adjacentLegPoint, oppositeLegPoint, cv::Scalar(0,255,0));
+
+        double n = pointForAngle.getY() - gradientForAngle * pointForAngle.getX();
+        double x = 10;
+        double y = gradientForAngle * x + n;
+
+        cv::Point startNormalPoint = cv::Point(pointForAngle.getX(), pointForAngle.getY());
+        cv::Point endNormalPoint = cv::Point(x, y);
+        cv::line(transformedImagePaintableLaneModel, startNormalPoint, endNormalPoint, cv::Scalar(0,0,0));
+
     } else {
         cv::Point pointLoc = cv::Point(5, 5);
         cv::circle(transformedImagePaintableLaneModel, pointLoc, 3, cv::Scalar(0,0,255), 0);
@@ -955,6 +964,14 @@ void cLaneDetectionFu::buildLaneMarkingsLists(
     }
 }
 
+/**
+ *
+ * @param p
+ * @param m
+ * @param offset Positive if shifting to the left, negative to the right
+ * @param x
+ * @param y
+ */
 void shiftPoint(FuPoint<double> &p, double m, double offset, int x, int y)
 {
     if (m < 0) {
@@ -964,7 +981,6 @@ void shiftPoint(FuPoint<double> &p, double m, double offset, int x, int y)
     }
     p.setX(x + offset * cos(atan(-1 / m)));
     p.setY(y + offset * sin(atan(-1 / m)));
-    return;
 }
 
 void cLaneDetectionFu::generateMovedPolynomials()
@@ -2131,11 +2147,31 @@ void cLaneDetectionFu::pubAngle() {
         xRightLane = polyRight.at(y);
         m = gradient(y, pointsRight, polyRight.getCoefficients());
     } else {
+        lastAngle = 0;
+        return;
+
         xRightLane = movedPolyRight.at(y);
         m = gradient(y, movedPolyRight);
     }
 
-    shiftPoint(movedPointForAngle, m, 22.f, y, xRightLane);
+    m = -m;
+
+    ROS_ERROR("gradient: %f", m);
+
+    //shiftPoint(movedPointForAngle, m, 10.f, y, xRightLane);
+
+    if (m < 0) {
+        movedPointForAngle.setX(y + 22.f * cos(atan(-1 / m)));
+        movedPointForAngle.setY(xRightLane - 22.f * sin(atan(-1 / m)));
+    } else{
+        movedPointForAngle.setX(y - 22.f * cos(atan(-1 / m)));
+        movedPointForAngle.setY(xRightLane + 22.f * sin(atan(-1 / m)));
+    }
+
+    pointForAngle.setX(xRightLane);
+    pointForAngle.setY(y);
+
+    gradientForAngle = m;
 
     //double xRightLane = polyDetectedRight ? polyRight.at(y) : movedPolyRight.at(y);
     //double xCenterLane = polyDetectedCenter ? polyCenter.at(y) : movedPolyCenter.at(y);
