@@ -432,7 +432,7 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
         cv::Point anglePointLoc = cv::Point(sin(lastAngle * PI / 180) * angleAdjacentLeg + proj_image_w_half, proj_image_h - angleAdjacentLeg);
         cv::line(transformedImagePaintableLaneModel, pointLoc, anglePointLoc, cv::Scalar(255,255,255));
 
-        cv::Point targetPoint = cv::Point(movedPointForAngle.getX(), movedPointForAngle.getY());
+        cv::Point targetPoint = cv::Point(proj_image_w - movedPointForAngle.getX(), movedPointForAngle.getY());
         cv::circle(transformedImagePaintableLaneModel, targetPoint, 2, cv::Scalar(0,0,255), -1);
 
         cv::Point adjacentLegPoint = cv::Point(proj_image_w_half, proj_image_h - adjacentLeg);
