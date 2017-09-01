@@ -398,7 +398,7 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
         int b = lanePolynomial.getLastUsedPosition() == RIGHT ? 255 : 0;
 
 
-        for(int i = minYPolyRoi; i < maxYRoi; i++) {
+        /*for(int i = minYPolyRoi; i < maxYRoi; i++) {
             cv::Point pointLoc = cv::Point(lanePolynomial.getLanePoly().at(i)+proj_image_w_half, i);
             cv::circle(transformedImagePaintableLaneModel, pointLoc, 0, cv::Scalar(b,g,r), -1);
         }
@@ -424,13 +424,22 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
             FuPoint<int> supp = supps[i];
             cv::Point suppLoc = cv::Point(supp.getX(), supp.getY());
             cv::circle(transformedImagePaintableLaneModel, suppLoc, 1, cv::Scalar(b,g,r), -1);
-        }
+        }*/
 
         cv::Point pointLoc = cv::Point(proj_image_w_half, proj_image_h);
         cv::circle(transformedImagePaintableLaneModel, pointLoc, 2, cv::Scalar(0,0,255), -1);
 
-        cv:Point anglePointLoc = cv::Point(sin(lastAngle * PI / 180) * angleAdjacentLeg + proj_image_w_half, proj_image_h - angleAdjacentLeg);
+        cv::Point anglePointLoc = cv::Point(sin(lastAngle * PI / 180) * angleAdjacentLeg + proj_image_w_half, proj_image_h - angleAdjacentLeg);
         cv::line(transformedImagePaintableLaneModel, pointLoc, anglePointLoc, cv::Scalar(255,255,255));
+
+        cv::Point targetPoint = cv::Point(movedPointForAngle.getX(), movedPointForAngle.getY());
+        cv::circle(transformedImagePaintableLaneModel, targetPoint, 2, cv::Scalar(0,0,255), -1);
+
+        cv::Point adjacentLegPoint = cv::Point(proj_image_w_half, proj_image_h - adjacentLeg);
+        cv::line(transformedImagePaintableLaneModel, pointLoc, adjacentLegPoint, cv::Scalar(255,0,0));
+
+        cv::Point oppositeLegPoint = cv::Point(proj_image_w_half + oppositeLeg, proj_image_h - adjacentLeg);
+        cv::line(transformedImagePaintableLaneModel, adjacentLegPoint, oppositeLegPoint, cv::Scalar(0,255,0));
     } else {
         cv::Point pointLoc = cv::Point(5, 5);
         cv::circle(transformedImagePaintableLaneModel, pointLoc, 3, cv::Scalar(0,0,255), 0);
@@ -969,6 +978,7 @@ void cLaneDetectionFu::generateMovedPolynomials()
     int x2 = minYPolyRoi + ((proj_image_h-minYPolyRoi)/2);
     int x3 = proj_image_h-5;
 
+    // TODO defaultXRight - defaultXCenter
     double laneWidth = 45.f;
 
     FuPoint<double> pointLeft1 = FuPoint<double>();
@@ -1303,10 +1313,18 @@ int cLaneDetectionFu::horizDistance(FuPoint<int> &p1, FuPoint<int> &p2) {
  * @param coeffs    The coefficients under usage of the newton basis
  * @return          The gradient of the polynomial at x
  */
-double cLaneDetectionFu::gradient(double x, std::vector<FuPoint<int>> &points,
-        std::vector<double> coeffs) {
+double cLaneDetectionFu::gradient(double x, vector<FuPoint<int>> &points,
+        vector<double> coeffs) {
     return 2 * coeffs[2] * x + coeffs[1] - coeffs[2] * points[1].getY()
             - coeffs[2] * points[0].getY();
+}
+
+double cLaneDetectionFu::gradient(double x, NewtonPolynomial polynomial) {
+    vector<double> coeffs = polynomial.getCoefficients();
+
+
+    return 2 * coeffs[2] * x + coeffs[1] - coeffs[2] * polynomial.at(10);
+           - coeffs[2] * polynomial.at(50);
 }
 
 /**
@@ -1438,7 +1456,7 @@ ePosition cLaneDetectionFu::maxProportion() {
 void cLaneDetectionFu::createLanePoly(ePosition position) {
     lanePoly.clear();
 
-    double laneWidth = (defaultXRight - defaultXCenter) / 2; //45.f;
+    //double laneWidth = (defaultXRight - defaultXCenter) / 2; //45.f;
     double x1 = minYPolyRoi + 5;
     double x2 = minYPolyRoi + ((proj_image_h-minYPolyRoi) / 2);
     double x3 = proj_image_h - 5;
@@ -1459,9 +1477,9 @@ void cLaneDetectionFu::createLanePoly(ePosition position) {
         m2 = gradient(x2, pointsLeft, usedPoly.getCoefficients());
         m3 = gradient(x3, pointsLeft, usedPoly.getCoefficients());
 
-        shiftPoint(point1,m1, laneWidth, x1, usedPoly.at(x1));
-        shiftPoint(point2,m2, laneWidth, x2, usedPoly.at(x2));
-        shiftPoint(point3,m3, laneWidth, x3, usedPoly.at(x3));
+        shiftPoint(point1,m1, defaultXLeft, x1, usedPoly.at(x1));
+        shiftPoint(point2,m2, defaultXLeft, x2, usedPoly.at(x2));
+        shiftPoint(point3,m3, defaultXLeft, x3, usedPoly.at(x3));
     }
     else if (position == CENTER) {
         usedPoly = polyCenter;
@@ -1469,9 +1487,9 @@ void cLaneDetectionFu::createLanePoly(ePosition position) {
         m2 = gradient(x2, pointsCenter, usedPoly.getCoefficients());
         m3 = gradient(x3, pointsCenter, usedPoly.getCoefficients());
 
-        shiftPoint(point1,m1, laneWidth, x1, usedPoly.at(x1));
-        shiftPoint(point2,m2, laneWidth, x2, usedPoly.at(x2));
-        shiftPoint(point3,m3, laneWidth, x3, usedPoly.at(x3));
+        shiftPoint(point1,m1, defaultXCenter, x1, usedPoly.at(x1));
+        shiftPoint(point2,m2, defaultXCenter, x2, usedPoly.at(x2));
+        shiftPoint(point3,m3, defaultXCenter, x3, usedPoly.at(x3));
     }
     else if (position == RIGHT) {
         usedPoly = polyRight;
@@ -1479,9 +1497,9 @@ void cLaneDetectionFu::createLanePoly(ePosition position) {
         m2 = gradient(x2, pointsRight, usedPoly.getCoefficients());
         m3 = gradient(x3, pointsRight, usedPoly.getCoefficients());
 
-        shiftPoint(point1,m1, laneWidth, x1, usedPoly.at(x1));
-        shiftPoint(point2,m2, laneWidth, x2, usedPoly.at(x2));
-        shiftPoint(point3,m3, laneWidth, x3, usedPoly.at(x3));
+        shiftPoint(point1,m1, defaultXRight, x1, usedPoly.at(x1));
+        shiftPoint(point2,m2, defaultXRight, x2, usedPoly.at(x2));
+        shiftPoint(point3,m3, defaultXRight, x3, usedPoly.at(x3));
     }
 
     // create the lane polynomial out of the shifted points
@@ -1858,14 +1876,6 @@ bool cLaneDetectionFu::ransacInternal(ePosition position,
         return false;
     }
 
-    // sort the lane marking edge points
-    std::vector<FuPoint<int>> sortedMarkings = laneMarkings;
-
-    std::sort(sortedMarkings.begin(), sortedMarkings.end(),
-            [](FuPoint<int> a, FuPoint<int> b) {
-                return a.getY() < b.getY();
-            });
-
     //ROS_ERROR("length: %d", sortedMarkings.size());
 
     /*
@@ -1889,20 +1899,19 @@ bool cLaneDetectionFu::ransacInternal(ePosition position,
 
     // Points are selected from the bottom, mid and top. The selection regions
     // are spread apart for better results during RANSAC
-    for (std::vector<FuPoint<int>>::size_type i = 0; i != sortedMarkings.size();
-            i++) {
-        if (i < double(sortedMarkings.size()) / 7) {
-            markings1.push_back(sortedMarkings[i]);
+    for (std::vector<FuPoint<int>>::size_type i = 0; i != laneMarkings.size(); i++) {
+        if (i < double(laneMarkings.size()) / 7) {
+            markings1.push_back(laneMarkings[i]);
         }
-        else if (i >= (double(sortedMarkings.size()) / 7) * 3
-                && i < (double(sortedMarkings.size()) / 7) * 4) {
-            markings2.push_back(sortedMarkings[i]);
+        else if (i >= (double(laneMarkings.size()) / 7) * 3
+                && i < (double(laneMarkings.size()) / 7) * 4) {
+            markings2.push_back(laneMarkings[i]);
         }
-        else if (i >= (double(sortedMarkings.size()) / 7) * 6) {
-            markings3.push_back(sortedMarkings[i]);
+        else if (i >= (double(laneMarkings.size()) / 7) * 6) {
+            markings3.push_back(laneMarkings[i]);
         }
 
-        if (sortedMarkings[i].getY() > 5) {
+        if (laneMarkings[i].getY() > 5) {
             highEnoughY = true;
         }
     }
@@ -2050,7 +2059,7 @@ bool cLaneDetectionFu::polyValid(ePosition position, NewtonPolynomial poly,
         return true;
     }
 
-    FuPoint<int> p1 = FuPoint<int>(poly.at(polyY1), polyY1);    //y = 75
+    /*FuPoint<int> p1 = FuPoint<int>(poly.at(polyY1), polyY1);    //y = 75
 
     if (horizDistanceToDefaultLine(position, p1) > 10) {
         //ROS_INFO("Poly was to far away from default line at y = 25");
@@ -2069,7 +2078,7 @@ bool cLaneDetectionFu::polyValid(ePosition position, NewtonPolynomial poly,
     if (horizDistanceToDefaultLine(position, p3) > 40) {
         //ROS_INFO("Poly was to far away from default line at y = 30");
         return false;
-    }
+    }*/
 
     //ROS_INFO("Poly is valid");
 
@@ -2105,27 +2114,52 @@ void cLaneDetectionFu::pubRGBImageMsg(cv::Mat& rgb_mat, image_transport::CameraP
     publisher.publish(rgb_img, rgb_camera_info);
 }
 
-void cLaneDetectionFu::pubAngle()
-{
+void cLaneDetectionFu::pubAngle() {
     if (!lanePolynomial.hasDetected())
         return;
 
-    // why proj_image_h? 
-    double oppositeLeg = lanePolynomial.getLanePoly().at(proj_image_h - angleAdjacentLeg);
+    //double oppositeLeg = lanePolynomial.getLanePoly().at(proj_image_h - angleAdjacentLeg);
     // Gegenkathete - oppositeLeg
-    // Ankathete - angleAdjacentLeg?!
-    // this seems to be wrong!
-    double result = atan(oppositeLeg / angleAdjacentLeg) * 180 / PI;
+    // Ankathete - angleAdjacentLeg
+    //double result = atan(oppositeLeg / angleAdjacentLeg) * 180 / PI;
+
+    int y = proj_image_h - angleAdjacentLeg;
+    double xRightLane;
+    double m;
+
+    if (polyDetectedRight) {
+        xRightLane = polyRight.at(y);
+        m = gradient(y, pointsRight, polyRight.getCoefficients());
+    } else {
+        xRightLane = movedPolyRight.at(y);
+        m = gradient(y, movedPolyRight);
+    }
+
+    shiftPoint(movedPointForAngle, m, 22.f, y, xRightLane);
+
+    //double xRightLane = polyDetectedRight ? polyRight.at(y) : movedPolyRight.at(y);
+    //double xCenterLane = polyDetectedCenter ? polyCenter.at(y) : movedPolyCenter.at(y);
+
+    oppositeLeg = proj_image_w_half - movedPointForAngle.getX();
+    adjacentLeg = proj_image_h - movedPointForAngle.getY();
+
+    /*if (xCenterLane + oppositeLeg < proj_image_w_half) {
+        oppositeLeg *= -1;
+    }*/
+
+    double result = atan(oppositeLeg / adjacentLeg) * 180 / PI;
+
+    ROS_ERROR("oppositeLeg: %f, angle: %f", oppositeLeg, result);
 
     /*
      * filter too rash steering angles / jitter in polynomial data
      */
-    if (std::abs(result - lastAngle) > maxAngleDiff) {
+    /*if (std::abs(result - lastAngle) > maxAngleDiff) {
         if (result - lastAngle > 0)
             result = lastAngle + maxAngleDiff;
         else
             result = lastAngle - maxAngleDiff;
-    }
+    }*/
 
     lastAngle = result;
 

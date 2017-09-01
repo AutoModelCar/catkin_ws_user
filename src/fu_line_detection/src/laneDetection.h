@@ -247,6 +247,9 @@ class cLaneDetectionFu
 
         int maxAngleDiff;
 
+        FuPoint<double> movedPointForAngle = FuPoint<double>();
+        double oppositeLeg;
+        double adjacentLeg;
 
 
     public:
@@ -303,6 +306,8 @@ class cLaneDetectionFu
 
         double gradient(double, std::vector<FuPoint<int>>&,
                 std::vector<double>);
+
+        double gradient(double x, NewtonPolynomial polynomial);
 
         double intersection(FuPoint<double>&, double&, std::vector<FuPoint<int>>&,
                 std::vector<double>&);
