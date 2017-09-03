@@ -278,6 +278,8 @@ class cLaneDetectionFu
 
         void findLanePositions(vector<FuPoint<int>> &laneMarkings);
 
+        void shiftPoint(FuPoint<double> &p, double m, double offset, int x, int y);
+
         void generateMovedPolynomials();
 
         bool isInRange(FuPoint<int> &lanePoint, FuPoint<int> &p);

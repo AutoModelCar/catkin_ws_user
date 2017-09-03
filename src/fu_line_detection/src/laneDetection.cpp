@@ -402,8 +402,8 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
         cv::Point pointLoc = cv::Point(proj_image_w_half, proj_image_h);
         cv::circle(angleImg, pointLoc, 2, cv::Scalar(0,0,255), -1);
 
-        cv::Point anglePointLoc = cv::Point(sin(lastAngle * PI / 180) * angleAdjacentLeg + proj_image_w_half, proj_image_h - angleAdjacentLeg);
-        cv::line(angleImg, pointLoc, anglePointLoc, cv::Scalar(0,0,255));
+        //cv::Point anglePointLoc = cv::Point(sin(lastAngle * PI / 180) * angleAdjacentLeg + proj_image_w_half, proj_image_h - angleAdjacentLeg);
+        //cv::line(angleImg, pointLoc, anglePointLoc, cv::Scalar(0,0,255));
 
         cv::Point startNormalPoint = cv::Point(pointForAngle.getX(), pointForAngle.getY());
         cv::circle(angleImg, startNormalPoint, 2, cv::Scalar(100,100,100), -1);
@@ -411,14 +411,14 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
         cv::Point targetPoint = cv::Point(proj_image_w - movedPointForAngle.getX(), movedPointForAngle.getY());
         cv::circle(angleImg, targetPoint, 2, cv::Scalar(0,0,255), -1);
 
-        cv::Point adjacentLegPoint = cv::Point(proj_image_w_half, proj_image_h - adjacentLeg);
-        cv::line(angleImg, pointLoc, adjacentLegPoint, cv::Scalar(255,0,0));
+        //cv::Point adjacentLegPoint = cv::Point(proj_image_h - adjacentLeg, proj_image_w_half);
+        //cv::line(angleImg, pointLoc, adjacentLegPoint, cv::Scalar(255,0,0));
 
-        cv::Point oppositeLegPoint = cv::Point(proj_image_w_half + oppositeLeg, proj_image_h - adjacentLeg);
-        cv::line(angleImg, adjacentLegPoint, oppositeLegPoint, cv::Scalar(0,255,0));
+        //cv::Point oppositeLegPoint = cv::Point(proj_image_h - adjacentLeg, proj_image_w_half + oppositeLeg);
+        //cv::line(angleImg, adjacentLegPoint, oppositeLegPoint, cv::Scalar(0,255,0));
 
         // tangent
-        double mLocal = (-1 / gradientForAngle);
+        double mLocal = gradientForAngle;
         double n = pointForAngle.getY() - mLocal * pointForAngle.getX();
         double x = 0;
         double y = mLocal * x + n;
@@ -429,12 +429,27 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
         cv::line(angleImg, startTangent, endTangent, cv::Scalar(102,0,204));
 
         // normal vector
-        n = pointForAngle.getY() - gradientForAngle * pointForAngle.getX();
+        /*n = pointForAngle.getY() - gradientForAngle * pointForAngle.getX();
         x = 10;
         y = gradientForAngle * x + n;
 
-        cv::Point endNormalPoint = cv::Point(x, y);
-        cv::line(angleImg, startNormalPoint, endNormalPoint, cv::Scalar(0,0,0));
+        cv::Point endNormalPoint = cv::Point(y, x);
+        cv::line(angleImg, startNormalPoint, endNormalPoint, cv::Scalar(0,0,0));*/
+
+
+        FuPoint<double> test = FuPoint<double>();
+        FuPoint<double> test2 = FuPoint<double>();
+        shiftPoint(test, -0.9, 5.f, 20, 20);
+        shiftPoint(test2, 0.9, 10.f, 20, 20);
+
+        cv::Point p1 = cv::Point(20, 20);
+        cv::circle(angleImg, p1, 2, cv::Scalar(0,0,0), -1);
+        cv::Point p2 = cv::Point(test.getX(), test.getY());
+        cv::circle(angleImg, p2, 2, cv::Scalar(0,0,255), -1);
+        cv::Point p3 = cv::Point(test2.getX(), test2.getY());
+        cv::circle(angleImg, p3, 2, cv::Scalar(0,255,0), -1);
+
+        ROS_ERROR("p2.x: %f, p2.y: %f", test.getX(), test.getY());
     }
         cv::namedWindow("pubAngle", WINDOW_NORMAL);
         cv::imshow("pubAngle", angleImg);
@@ -1026,15 +1041,15 @@ void cLaneDetectionFu::buildLaneMarkingsLists(
  * @param x
  * @param y
  */
-void shiftPoint(FuPoint<double> &p, double m, double offset, int x, int y)
+void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, int x, int y)
 {
     if (m < 0) {
-        p.setX(x - offset * cos(atan(-1 / m)));
-        p.setY(y - offset * sin(atan(-1 / m)));
+        p.setX(x + offset * cos(atan2(-1, m)));
+        p.setY(y + offset * sin(atan2(-1, m)));
         return;
     }
-    p.setX(x + offset * cos(atan(-1 / m)));
-    p.setY(y + offset * sin(atan(-1 / m)));
+    p.setX(x - offset * cos(atan2(-1, m)));
+    p.setY(y - offset * sin(atan2(-1, m)));
 }
 
 void cLaneDetectionFu::generateMovedPolynomials()
@@ -2211,7 +2226,17 @@ void cLaneDetectionFu::pubAngle() {
 
     ROS_ERROR("gradient: %f, atan: %f, atan2: %f", m, atan(-1 / m), atan2(-1, m));
 
-    shiftPoint(movedPointForAngle, m, 22.f, y, xRightLane);
+    //shiftPoint(movedPointForAngle, m, 22.f, y, xRightLane);
+
+
+    if (m < 0) {
+        movedPointForAngle.setX(y - 22.f * cos(atan(-1 / m)));
+        movedPointForAngle.setY(xRightLane - 22.f * sin(atan(-1 / m)));
+    } else {
+        movedPointForAngle.setX(y + 22.f * cos(atan(-1 / m)));
+        movedPointForAngle.setY(xRightLane + 22.f * sin(atan(-1 / m)));
+    }
+
 
     /*if (m > 0) {
         movedPointForAngle.setX(y - 22.f * cos(atan(-1 / m)));
@@ -2224,7 +2249,7 @@ void cLaneDetectionFu::pubAngle() {
     pointForAngle.setX(xRightLane);
     pointForAngle.setY(y);
 
-    gradientForAngle = -m;
+    gradientForAngle = m;
 
     //double xRightLane = polyDetectedRight ? polyRight.at(y) : movedPolyRight.at(y);
     //double xCenterLane = polyDetectedCenter ? polyCenter.at(y) : movedPolyCenter.at(y);
