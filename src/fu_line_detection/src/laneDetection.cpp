@@ -385,14 +385,14 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
     #endif
     //---------------------- END DEBUG OUTPUT RANSAC POLYNOMIALS ------------------------------//
 
-    detectLane();
+    //detectLane();
 
     pubAngle();
 
     cv::Mat transformedImagePaintableLaneModel = transformedImage.clone();
     cv::cvtColor(transformedImagePaintableLaneModel,transformedImagePaintableLaneModel,CV_GRAY2BGR);
 
-    if (lanePolynomial.hasDetected()) {
+    if (polyDetectedRight) {
         int r = lanePolynomial.getLastUsedPosition() == LEFT ? 255 : 0;
         int g = lanePolynomial.getLastUsedPosition() == CENTER ? 255 : 0;
         int b = lanePolynomial.getLastUsedPosition() == RIGHT ? 255 : 0;
@@ -432,6 +432,9 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
         cv::Point anglePointLoc = cv::Point(sin(lastAngle * PI / 180) * angleAdjacentLeg + proj_image_w_half, proj_image_h - angleAdjacentLeg);
         cv::line(transformedImagePaintableLaneModel, pointLoc, anglePointLoc, cv::Scalar(255,255,255));
 
+        cv::Point startNormalPoint = cv::Point(pointForAngle.getX(), pointForAngle.getY());
+        cv::circle(transformedImagePaintableLaneModel, startNormalPoint, 2, cv::Scalar(100,100,100), -1);
+
         cv::Point targetPoint = cv::Point(proj_image_w - movedPointForAngle.getX(), movedPointForAngle.getY());
         cv::circle(transformedImagePaintableLaneModel, targetPoint, 2, cv::Scalar(0,0,255), -1);
 
@@ -445,7 +448,6 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
         double x = 10;
         double y = gradientForAngle * x + n;
 
-        cv::Point startNormalPoint = cv::Point(pointForAngle.getX(), pointForAngle.getY());
         cv::Point endNormalPoint = cv::Point(x, y);
         cv::line(transformedImagePaintableLaneModel, startNormalPoint, endNormalPoint, cv::Scalar(0,0,0));
 
@@ -2131,8 +2133,8 @@ void cLaneDetectionFu::pubRGBImageMsg(cv::Mat& rgb_mat, image_transport::CameraP
 }
 
 void cLaneDetectionFu::pubAngle() {
-    if (!lanePolynomial.hasDetected())
-        return;
+    //if (!lanePolynomial.hasDetected())
+    //    return;
 
     //double oppositeLeg = lanePolynomial.getLanePoly().at(proj_image_h - angleAdjacentLeg);
     // Gegenkathete - oppositeLeg
@@ -2154,24 +2156,22 @@ void cLaneDetectionFu::pubAngle() {
         m = gradient(y, movedPolyRight);
     }
 
-    m = -m;
+    ROS_ERROR("gradient: %f, atan: %f, atan2: %f", m, atan(-1 / m), atan2(-1, m));
 
-    ROS_ERROR("gradient: %f", m);
+    shiftPoint(movedPointForAngle, -m, 22.f, y, xRightLane);
 
-    //shiftPoint(movedPointForAngle, m, 10.f, y, xRightLane);
-
-    if (m < 0) {
-        movedPointForAngle.setX(y + 22.f * cos(atan(-1 / m)));
+    /*if (m > 0) {
+        movedPointForAngle.setX(y - 22.f * cos(atan(-1 / m)));
         movedPointForAngle.setY(xRightLane - 22.f * sin(atan(-1 / m)));
     } else{
         movedPointForAngle.setX(y - 22.f * cos(atan(-1 / m)));
         movedPointForAngle.setY(xRightLane + 22.f * sin(atan(-1 / m)));
-    }
+    }*/
 
     pointForAngle.setX(xRightLane);
     pointForAngle.setY(y);
 
-    gradientForAngle = m;
+    gradientForAngle = -m;
 
     //double xRightLane = polyDetectedRight ? polyRight.at(y) : movedPolyRight.at(y);
     //double xCenterLane = polyDetectedCenter ? polyCenter.at(y) : movedPolyCenter.at(y);
