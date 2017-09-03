@@ -389,6 +389,54 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
 
     pubAngle();
 
+    #ifdef PAINT_OUTPUT
+        cv::Mat angleImg(120, 120, CV_8UC3, Scalar(255, 255, 255));
+    if (polyDetectedRight) {
+
+        for(int i = minYPolyRoi; i < maxYRoi; i++)
+        {
+            cv::Point pointLocRight = cv::Point(polyRight.at(i), i);
+            cv::circle(angleImg,pointLocRight,0,cv::Scalar(255,0,0),-1);
+        }
+
+        cv::Point pointLoc = cv::Point(proj_image_w_half, proj_image_h);
+        cv::circle(angleImg, pointLoc, 2, cv::Scalar(0,0,255), -1);
+
+        cv::Point anglePointLoc = cv::Point(sin(lastAngle * PI / 180) * angleAdjacentLeg + proj_image_w_half, proj_image_h - angleAdjacentLeg);
+        cv::line(angleImg, pointLoc, anglePointLoc, cv::Scalar(0,0,255));
+
+        cv::Point startNormalPoint = cv::Point(pointForAngle.getX(), pointForAngle.getY());
+        cv::circle(angleImg, startNormalPoint, 2, cv::Scalar(100,100,100), -1);
+
+        cv::Point targetPoint = cv::Point(proj_image_w - movedPointForAngle.getX(), movedPointForAngle.getY());
+        cv::circle(angleImg, targetPoint, 2, cv::Scalar(0,0,255), -1);
+
+        cv::Point adjacentLegPoint = cv::Point(proj_image_w_half, proj_image_h - adjacentLeg);
+        cv::line(angleImg, pointLoc, adjacentLegPoint, cv::Scalar(255,0,0));
+
+        cv::Point oppositeLegPoint = cv::Point(proj_image_w_half + oppositeLeg, proj_image_h - adjacentLeg);
+        cv::line(angleImg, adjacentLegPoint, oppositeLegPoint, cv::Scalar(0,255,0));
+
+        // tangent
+        double n = pointForAngle.getY() - (-gradientForAngle) * pointForAngle.getX();
+        double x = 10;
+        double y = gradientForAngle * x + n;
+        cv::Point endNormalPoint = cv::Point(x, y);
+        cv::line(angleImg, startNormalPoint, endNormalPoint, cv::Scalar(102,0,204));
+
+        // normal vector
+        n = pointForAngle.getY() - gradientForAngle * pointForAngle.getX();
+        x = 10;
+        y = gradientForAngle * x + n;
+
+        endNormalPoint = cv::Point(x, y);
+        cv::line(angleImg, startNormalPoint, endNormalPoint, cv::Scalar(0,0,0));
+    }
+        cv::namedWindow("pubAngle", WINDOW_NORMAL);
+        cv::imshow("pubAngle", angleImg);
+        cv::waitKey(1);
+    #endif
+
     cv::Mat transformedImagePaintableLaneModel = transformedImage.clone();
     cv::cvtColor(transformedImagePaintableLaneModel,transformedImagePaintableLaneModel,CV_GRAY2BGR);
 
