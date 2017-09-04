@@ -435,16 +435,20 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
 
         cv::Point endNormalPoint = cv::Point(y, x);
         cv::line(angleImg, startNormalPoint, endNormalPoint, cv::Scalar(0,0,0));*/
-
+    }
+	
 	int startX = 20;
 	int startY = 20;
 	int endX = 20;
 	int endY = 30;
 
+	double m = -1.0f;
+	double offset = 10.f;
+
         FuPoint<double> shiftStart = FuPoint<double>();
         FuPoint<double> shiftEnd = FuPoint<double>();
-        shiftPoint(shiftStart, 0.9, 10.f, startX, startY);
-        shiftPoint(shiftEnd, 0.9, 10.f, endX, endY);
+        shiftPoint(shiftStart, m, offset, startX, startY);
+        shiftPoint(shiftEnd, m, offset, endX, endY);
 
         cv::Point startP = cv::Point(startX, startY);
         cv::Point endP = cv::Point(endX, endY);
@@ -453,7 +457,7 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
 	cv::Point shiftStartP = cv::Point(shiftStart.getX(), shiftStart.getY());
         cv::Point shiftEndP = cv::Point(shiftEnd.getX(), shiftEnd.getY());
         cv::line(angleImg, shiftStartP, shiftEndP, cv::Scalar(0,0,255));
-    }
+
         cv::namedWindow("pubAngle", WINDOW_NORMAL);
         cv::imshow("pubAngle", angleImg);
         cv::waitKey(1);
