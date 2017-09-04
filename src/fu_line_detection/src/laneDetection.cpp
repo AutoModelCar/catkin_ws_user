@@ -436,20 +436,23 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
         cv::Point endNormalPoint = cv::Point(y, x);
         cv::line(angleImg, startNormalPoint, endNormalPoint, cv::Scalar(0,0,0));*/
 
+	int startX = 20;
+	int startY = 20;
+	int endX = 20;
+	int endY = 30;
 
-        FuPoint<double> test = FuPoint<double>();
-        FuPoint<double> test2 = FuPoint<double>();
-        shiftPoint(test, -0.9, 5.f, 20, 20);
-        shiftPoint(test2, 0.9, 10.f, 20, 20);
+        FuPoint<double> shiftStart = FuPoint<double>();
+        FuPoint<double> shiftEnd = FuPoint<double>();
+        shiftPoint(shiftStart, 0.9, 10.f, startX, startY);
+        shiftPoint(shiftEnd, 0.9, 10.f, endX, endY);
 
-        cv::Point p1 = cv::Point(20, 20);
-        cv::circle(angleImg, p1, 2, cv::Scalar(0,0,0), -1);
-        cv::Point p2 = cv::Point(test.getX(), test.getY());
-        cv::circle(angleImg, p2, 2, cv::Scalar(0,0,255), -1);
-        cv::Point p3 = cv::Point(test2.getX(), test2.getY());
-        cv::circle(angleImg, p3, 2, cv::Scalar(0,255,0), -1);
+        cv::Point startP = cv::Point(startX, startY);
+        cv::Point endP = cv::Point(endX, endY);
+        cv::line(angleImg, startP, endP, cv::Scalar(0,0,0));
 
-        ROS_ERROR("p2.x: %f, p2.y: %f", test.getX(), test.getY());
+	cv::Point shiftStartP = cv::Point(shiftStart.getX(), shiftStart.getY());
+        cv::Point shiftEndP = cv::Point(shiftEnd.getX(), shiftEnd.getY());
+        cv::line(angleImg, shiftStartP, shiftEndP, cv::Scalar(0,0,255));
     }
         cv::namedWindow("pubAngle", WINDOW_NORMAL);
         cv::imshow("pubAngle", angleImg);
