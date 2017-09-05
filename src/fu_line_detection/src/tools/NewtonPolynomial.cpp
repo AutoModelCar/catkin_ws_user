@@ -122,7 +122,9 @@ NewtonPolynomial& NewtonPolynomial::addData(std::vector<FuPoint<double>> ps)
 }
 
 /**
- * computes polynomial at position x
+ * Computes polynomial at position x of this polynomial.
+ * Axes of polynomial are swapped, i.e. the x value of
+ * the polynomial is the y value of the image.
  *
  * this uses horners method for computation.
  * @param x input for polynomial
