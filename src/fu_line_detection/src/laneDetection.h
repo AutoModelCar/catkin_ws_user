@@ -237,6 +237,8 @@ class cLaneDetectionFu
         NewtonPolynomial movedPolyCenter;
         NewtonPolynomial movedPolyRight;
 
+        vector<FuPoint<int>> movedPointsRight;
+
         int laneMarkingSquaredThreshold;
 
         int angleAdjacentLeg;
@@ -279,6 +281,8 @@ class cLaneDetectionFu
         void findLanePositions(vector<FuPoint<int>> &laneMarkings);
 
         void shiftPoint(FuPoint<double> &p, double m, double offset, int x, int y);
+
+        void shiftPoint(FuPoint<double> &p, double m, double offset, FuPoint<int> &origin);
 
         void generateMovedPolynomials();
 

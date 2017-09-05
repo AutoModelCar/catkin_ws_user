@@ -122,6 +122,8 @@ cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh)
     pointsCenter         = std::vector<FuPoint<int>>();
     pointsRight          = std::vector<FuPoint<int>>();
 
+    movedPointsRight     = std::vector<FuPoint<int>>();
+
     lanePoly             = NewtonPolynomial();
     lanePolynomial       = LanePolynomial();
 
@@ -1046,6 +1048,10 @@ void cLaneDetectionFu::buildLaneMarkingsLists(
     }
 }
 
+void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, FuPoint<int> &origin) {
+    shiftPoint(p, m, offset, origin.getX(), origin.getY());
+}
+
 /**
  *
  * @param p
@@ -1057,12 +1063,12 @@ void cLaneDetectionFu::buildLaneMarkingsLists(
 void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, int x, int y)
 {
     if (m > 0) {
-        p.setY(y - offset * cos(atan(-1 / m)));
         p.setX(x - offset * sin(atan(-1 / m)));
+        p.setY(y - offset * cos(atan(-1 / m)));
         return;
     }
-    p.setY(y + offset * cos(atan(-1 / m)));
     p.setX(x + offset * sin(atan(-1 / m)));
+    p.setY(y + offset * cos(atan(-1 / m)));
 }
 
 void cLaneDetectionFu::generateMovedPolynomials()
@@ -1072,9 +1078,7 @@ void cLaneDetectionFu::generateMovedPolynomials()
         return;
     }
 
-    int y1 = minYPolyRoi+5;
-    int y2 = minYPolyRoi + ((proj_image_h-minYPolyRoi)/2);
-    int y3 = proj_image_h-5;
+    movedPointsRight.clear();
 
     // TODO defaultXRight - defaultXCenter
     double laneWidth = 45.f;
@@ -1099,8 +1103,6 @@ void cLaneDetectionFu::generateMovedPolynomials()
     double m2 = 0;
     double m3 = 0;
 
-    double dRight = 0;
-
     NewtonPolynomial usedPoly;
 
     /*
@@ -1115,66 +1117,64 @@ void cLaneDetectionFu::generateMovedPolynomials()
      */
     if (polyDetectedRight && !polyDetectedCenter) {
         usedPoly = polyRight;
-        m1 = gradient(y1, pointsRight, usedPoly.getCoefficients());
-        m2 = gradient(y2, pointsRight, usedPoly.getCoefficients());
-        m3 = gradient(y3, pointsRight, usedPoly.getCoefficients());
+        m1 = gradient(pointsRight.at(0).getY(), pointsRight, usedPoly.getCoefficients());
+        m2 = gradient(pointsRight.at(1).getY(), pointsRight, usedPoly.getCoefficients());
+        m3 = gradient(pointsRight.at(2).getY(), pointsRight, usedPoly.getCoefficients());
 
         movedCenter = true;
 
-        shiftPoint(pointCenter1,m1, -laneWidth, usedPoly.at(y1), y1);
-        shiftPoint(pointCenter2,m2, -laneWidth, usedPoly.at(y2), y2);
-        shiftPoint(pointCenter3,m3, -laneWidth, usedPoly.at(y3), y3);
+        shiftPoint(pointCenter1,m1, -laneWidth, pointsRight.at(0));
+        shiftPoint(pointCenter2,m2, -laneWidth, pointsRight.at(1));
+        shiftPoint(pointCenter3,m3, -laneWidth, pointsRight.at(2));
 
         if (!polyDetectedLeft) {
             movedLeft = true;
 
-            shiftPoint(pointLeft1,m1, -2 * laneWidth, usedPoly.at(y1), y1);
-            shiftPoint(pointLeft2,m2, -2 * laneWidth, usedPoly.at(y2), y2);
-            shiftPoint(pointLeft3,m3, -2 * laneWidth, usedPoly.at(y3), y3);
+            shiftPoint(pointLeft1,m1, -2 * laneWidth, pointsRight.at(0));
+            shiftPoint(pointLeft2,m2, -2 * laneWidth, pointsRight.at(1));
+            shiftPoint(pointLeft3,m3, -2 * laneWidth, pointsRight.at(2));
         }
     }
     else if (polyDetectedLeft && !polyDetectedCenter) {
         usedPoly = polyLeft;
-        m1 = gradient(y1, pointsLeft, usedPoly.getCoefficients());
-        m2 = gradient(y2, pointsLeft, usedPoly.getCoefficients());
-        m3 = gradient(y3, pointsLeft, usedPoly.getCoefficients());
+        m1 = gradient(pointsLeft.at(0).getY(), pointsLeft, usedPoly.getCoefficients());
+        m2 = gradient(pointsLeft.at(1).getY(), pointsLeft, usedPoly.getCoefficients());
+        m3 = gradient(pointsLeft.at(2).getY(), pointsLeft, usedPoly.getCoefficients());
 
         movedCenter = true;
 
-        shiftPoint(pointCenter1,m1, laneWidth, usedPoly.at(y1), y1);
-        shiftPoint(pointCenter2,m2, laneWidth, usedPoly.at(y2), y2);
-        shiftPoint(pointCenter3,m3, laneWidth, usedPoly.at(y3), y3);
+        shiftPoint(pointCenter1,m1, laneWidth, pointsLeft.at(0));
+        shiftPoint(pointCenter2,m2, laneWidth, pointsLeft.at(1));
+        shiftPoint(pointCenter3,m3, laneWidth, pointsLeft.at(2));
 
         if (!polyDetectedRight) {
             movedRight = true;
 
-            shiftPoint(pointRight1,m1, 2 * laneWidth, usedPoly.at(y1), y1);
-            shiftPoint(pointRight2,m2, 2 * laneWidth, usedPoly.at(y2), y2);
-            shiftPoint(pointRight3,m3, 2 * laneWidth, usedPoly.at(y3), y3);
+            shiftPoint(pointRight1,m1, 2 * laneWidth, pointsLeft.at(0));
+            shiftPoint(pointRight2,m2, 2 * laneWidth, pointsLeft.at(1));
+            shiftPoint(pointRight3,m3, 2 * laneWidth, pointsLeft.at(2));
         }
     }
     else if (polyDetectedCenter) {
         usedPoly = polyCenter;
-        m1 = gradient(y1, pointsCenter, usedPoly.getCoefficients());
-        m2 = gradient(y2, pointsCenter, usedPoly.getCoefficients());
-        m3 = gradient(y3, pointsCenter, usedPoly.getCoefficients());
+        m1 = gradient(pointsCenter.at(0).getY(), pointsCenter, usedPoly.getCoefficients());
+        m2 = gradient(pointsCenter.at(1).getY(), pointsCenter, usedPoly.getCoefficients());
+        m3 = gradient(pointsCenter.at(2).getY(), pointsCenter, usedPoly.getCoefficients());
 
         if (!polyDetectedLeft) {
-            //ROS_ERROR("%f, %f, %f", m1, m2, m3);
-
             movedLeft = true;
 
-            shiftPoint(pointLeft1,m1, -laneWidth, usedPoly.at(y1), y1);
-            shiftPoint(pointLeft2,m2, -laneWidth, usedPoly.at(y2), y2);
-            shiftPoint(pointLeft3,m3, -laneWidth, usedPoly.at(y3), y3);
+            shiftPoint(pointLeft1,m1, -laneWidth, pointsCenter.at(0));
+            shiftPoint(pointLeft2,m2, -laneWidth, pointsCenter.at(1));
+            shiftPoint(pointLeft3,m3, -laneWidth, pointsCenter.at(2));
         }
 
         if (!polyDetectedRight) {
             movedRight = true;
 
-            shiftPoint(pointRight1,m1, laneWidth, usedPoly.at(y1), y1);
-            shiftPoint(pointRight2,m2, laneWidth, usedPoly.at(y2), y2);
-            shiftPoint(pointRight3,m3, laneWidth, usedPoly.at(y3), y3);
+            shiftPoint(pointRight1,m1, laneWidth, pointsCenter.at(0));
+            shiftPoint(pointRight2,m2, laneWidth, pointsCenter.at(1));
+            shiftPoint(pointRight3,m3, laneWidth, pointsCenter.at(2));
         }
     }
 
@@ -1196,6 +1196,11 @@ void cLaneDetectionFu::generateMovedPolynomials()
         movedPolyRight.addData(pointRight1);
         movedPolyRight.addData(pointRight2);
         movedPolyRight.addData(pointRight3);
+
+
+        movedPointsRight.push_back(FuPoint<int>(pointRight1.getX(), pointRight1.getY()));
+        movedPointsRight.push_back(FuPoint<int>(pointRight2.getX(), pointRight2.getY()));
+        movedPointsRight.push_back(FuPoint<int>(pointRight3.getX(), pointRight3.getY()));
     }
 }
 
@@ -2137,11 +2142,8 @@ void cLaneDetectionFu::pubAngle() {
         xRightLane = polyRight.at(y);
         m = gradient(y, pointsRight, polyRight.getCoefficients());
     } else {
-        lastAngle = 0;
-        return;
-
         xRightLane = movedPolyRight.at(y);
-        m = gradient(y, movedPolyRight);
+        m = gradient(y, movedPointsRight, movedPolyRight.getCoefficients());
     }
 
     shiftPoint(movedPointForAngle, m, -22.f, (int) xRightLane, y);
