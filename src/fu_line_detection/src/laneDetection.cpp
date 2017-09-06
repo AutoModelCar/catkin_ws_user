@@ -1224,6 +1224,8 @@ void cLaneDetectionFu::generateMovedPolynomials()
         movedPointsRight.push_back(FuPoint<int>(pointRight3.getX(), pointRight3.getY()));
         ROS_ERROR("/movedRight");
     }
+
+    isPolyMovedRight = movedRight;
 }
 
 bool cLaneDetectionFu::isInRange(FuPoint<int> &lanePoint, FuPoint<int> &p) {
@@ -2157,6 +2159,10 @@ void cLaneDetectionFu::pubRGBImageMsg(cv::Mat& rgb_mat, image_transport::CameraP
 }
 
 void cLaneDetectionFu::pubAngle() {
+    if (!polyDetectedRight && !isPolyMovedRight) {
+	return;
+    }
+
     int y = proj_image_h - angleAdjacentLeg;
     double xRightLane;
     double m;

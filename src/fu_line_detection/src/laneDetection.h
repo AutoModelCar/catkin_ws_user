@@ -237,6 +237,8 @@ class cLaneDetectionFu
         NewtonPolynomial movedPolyCenter;
         NewtonPolynomial movedPolyRight;
 
+	bool isPolyMovedRight;
+
         vector<FuPoint<int>> movedPointsRight;
 
         int laneMarkingSquaredThreshold;
