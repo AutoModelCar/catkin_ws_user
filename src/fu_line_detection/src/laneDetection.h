@@ -249,8 +249,8 @@ class cLaneDetectionFu
 
         int maxAngleDiff;
 
-        FuPoint<double> movedPointForAngle = FuPoint<double>();
-        FuPoint<double> pointForAngle = FuPoint<double>();
+        FuPoint<double> movedPointForAngle;
+        FuPoint<double> pointForAngle;
         double oppositeLeg;
         double adjacentLeg;
         double gradientForAngle;
