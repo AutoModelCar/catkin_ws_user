@@ -7,6 +7,7 @@ using namespace std;
 //#define PAINT_OUTPUT_IP_MAPPED_IMAGE
 //#define PAINT_OUTPUT_ROI
 #define PAINT_OUTPUT_LANE_MARKINGS
+//#define PAINT_OUTPUT_LANE_POLYNOMIALS
 #define PUBLISH_DEBUG_OUTPUT
 
 static const uint32_t MY_ROS_QUEUE_SIZE = 1;
@@ -391,13 +392,13 @@ ROS_ERROR("/generateMovedPolynomials");
             cv::circle(transformedImagePaintableRansac,pointPoly3,0,cv::Scalar(255,128,0),-1);
         }
 
-    pubRGBImageMsg(transformedImagePaintableRansac, image_publisher_ransac);
+        pubRGBImageMsg(transformedImagePaintableRansac, image_publisher_ransac);
 
-    #ifdef PAINT_OUTPUT
-        cv::namedWindow("RANSAC results", WINDOW_NORMAL);
-        cv::imshow("RANSAC results", transformedImagePaintableRansac);
-        cv::waitKey(1);
-    #endif
+        #ifdef PAINT_OUTPUT
+            cv::namedWindow("RANSAC results", WINDOW_NORMAL);
+            cv::imshow("RANSAC results", transformedImagePaintableRansac);
+            cv::waitKey(1);
+        #endif
     #endif
     //---------------------- END DEBUG OUTPUT RANSAC POLYNOMIALS ------------------------------//
 
@@ -478,7 +479,7 @@ ROS_ERROR("/pubAngle");
     pubRGBImageMsg(transformedImagePaintableLaneModel, image_publisher);
 
     //---------------------- DEBUG OUTPUT LANE POLYNOMIAL ---------------------------------//
-    #ifdef PAINT_OUTPUT
+    #ifdef PAINT_OUTPUT_LANE_POLYNOMIALS
         cv::namedWindow("Lane polynomial", WINDOW_NORMAL);
         cv::imshow("Lane polynomial", transformedImagePaintableLaneModel);
         cv::waitKey(1);
