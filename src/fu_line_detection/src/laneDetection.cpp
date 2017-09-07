@@ -28,6 +28,9 @@ sensor_msgs::CameraInfoPtr rgb_camera_info;
 // try kernel width 5 for now
 const static int g_kernel1DWidth = 5;
 
+
+std::size_t frame = 0;
+
 cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh)
     : nh_(nh), priv_nh_("~")
 {
@@ -183,9 +186,9 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
     bestPolyCenter = std::make_pair(NewtonPolynomial(), 0);
     bestPolyRight = std::make_pair(NewtonPolynomial(), 0);
 
-    supportersLeft.clear();
+    /*supportersLeft.clear();
     supportersCenter.clear();
-    supportersRight.clear();
+    supportersRight.clear();*/
 
     //use ROS image_proc or opencv instead of ip mapper?
 
@@ -282,47 +285,27 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
         cv::waitKey(1);
     #endif
     //---------------------- END DEBUG OUTPUT LANE MARKINGS ------------------------------//
-ROS_ERROR("findLanePositions");
+    ROS_ERROR("findLanePositions");
     findLanePositions(laneMarkings);
-ROS_ERROR("/findLanePositions");
-ROS_ERROR("buildLaneMarkingsLists");
+    ROS_ERROR("/findLanePositions");
+    ROS_ERROR("buildLaneMarkingsLists");
     // start actual execution
     buildLaneMarkingsLists(laneMarkings);
-ROS_ERROR("/buildLaneMarkingsLists");
+    ROS_ERROR("/buildLaneMarkingsLists");
 
     //---------------------- DEBUG OUTPUT GROUPED LANE MARKINGS ---------------------------------//
     #ifdef PUBLISH_DEBUG_OUTPUT
         transformedImagePaintable = transformedImage.clone();
         cv::cvtColor(transformedImagePaintable,transformedImagePaintable,CV_GRAY2BGR);
-        for(int i = 0; i < (int)laneMarkingsLeft.size(); i++)
-        {         
-            FuPoint<int> marking = laneMarkingsLeft[i];
-            cv::Point markingLoc = cv::Point(marking.getX(), marking.getY());
-            cv::circle(transformedImagePaintable,markingLoc,1,cv::Scalar(0,0,255),-1);         
-        }
-        for(int i = 0; i < (int)laneMarkingsCenter.size(); i++)
-        {         
-            FuPoint<int> marking = laneMarkingsCenter[i];
-            cv::Point markingLoc = cv::Point(marking.getX(), marking.getY());
-            cv::circle(transformedImagePaintable,markingLoc,1,cv::Scalar(0,255,0),-1);         
-        }
-        for(int i = 0; i < (int)laneMarkingsRight.size(); i++)
-        {         
-            FuPoint<int> marking = laneMarkingsRight[i];
-            cv::Point markingLoc = cv::Point(marking.getX(), marking.getY());
-            cv::circle(transformedImagePaintable,markingLoc,1,cv::Scalar(255,0,0),-1);         
-        }
-        for(int i = 0; i < (int)laneMarkingsNotUsed.size(); i++)
-        {
-            FuPoint<int> marking = laneMarkingsNotUsed[i];
-            cv::Point markingLoc = cv::Point(marking.getX(), marking.getY());
-            cv::circle(transformedImagePaintable,markingLoc,1,cv::Scalar(0,255,255),-1);
-        }
 
-        debug_paintPolynom(transformedImagePaintable, cv::Scalar(0,0,255), movedPolyLeft, minYPolyRoi, maxYRoi);
-        debug_paintPolynom(transformedImagePaintable, cv::Scalar(0,255,0), movedPolyCenter, minYPolyRoi, maxYRoi);
-        debug_paintPolynom(transformedImagePaintable, cv::Scalar(255,0,0), movedPolyRight, minYPolyRoi, maxYRoi);
+        debugPaintPoints(transformedImagePaintable, cv::Scalar(0,0,255), laneMarkingsLeft);
+        debugPaintPoints(transformedImagePaintable, cv::Scalar(0,255,0), laneMarkingsCenter);
+        debugPaintPoints(transformedImagePaintable, cv::Scalar(255,0,0), laneMarkingsRight);
+        debugPaintPoints(transformedImagePaintable, cv::Scalar(0,255,255), laneMarkingsNotUsed);
 
+        debugPaintPolynom(transformedImagePaintable, cv::Scalar(0, 255, 255), movedPolyLeft, minYPolyRoi, maxYRoi);
+        debugPaintPolynom(transformedImagePaintable, cv::Scalar(255, 255, 0), movedPolyCenter, minYPolyRoi, maxYRoi);
+        debugPaintPolynom(transformedImagePaintable, cv::Scalar(255, 0, 255), movedPolyRight, minYPolyRoi, maxYRoi);
 
         cv::Point2d p1l(defaultXLeft,minYPolyRoi);
         cv::Point2d p2l(defaultXLeft,maxYRoi-1);
@@ -345,36 +328,50 @@ ROS_ERROR("/buildLaneMarkingsLists");
         cv::line(transformedImagePaintable,p3,p4,cv::Scalar(0,200,0));
         cv::line(transformedImagePaintable,p4,p1,cv::Scalar(0,200,0));*/
 
+        debugPaintPoints(transformedImagePaintable, cv::Scalar(0,0,255), supportersLeft);
+        debugPaintPoints(transformedImagePaintable, cv::Scalar(0,255,0), supportersCenter);
+        debugPaintPoints(transformedImagePaintable, cv::Scalar(255,0,0), supportersRight);
+
         pubRGBImageMsg(transformedImagePaintable, image_publisher_lane_markings);
 
 
-    #ifdef PAINT_OUTPUT
-        cv::namedWindow("Grouped Lane Markings", WINDOW_NORMAL);
-        cv::imshow("Grouped Lane Markings", transformedImagePaintable);
-        cv::waitKey(1);
-    #endif
+        #ifdef PAINT_OUTPUT
+            cv::namedWindow("Grouped Lane Markings", WINDOW_NORMAL);
+            cv::imshow("Grouped Lane Markings", transformedImagePaintable);
+            cv::waitKey(1);
+
+            stringstream img;
+            img << "./frames/" << frame++ << ".jpg";
+            cv::imwrite(img.str(), transformedImagePaintable);
+
+        #endif
     #endif
     //---------------------- END DEBUG OUTPUT GROUPED LANE MARKINGS ------------------------------//
-ROS_ERROR("ransac");
-    ransac();
-ROS_ERROR("/ransac");
 
-ROS_ERROR("generateMovedPolynomials");
+    supportersLeft.clear();
+    supportersCenter.clear();
+    supportersRight.clear();
+
+    ROS_ERROR("ransac");
+    ransac();
+    ROS_ERROR("/ransac");
+
+    ROS_ERROR("generateMovedPolynomials");
     generateMovedPolynomials();
-ROS_ERROR("/generateMovedPolynomials");
+    ROS_ERROR("/generateMovedPolynomials");
 
     //---------------------- DEBUG OUTPUT RANSAC POLYNOMIALS ---------------------------------//
     #ifdef PUBLISH_DEBUG_OUTPUT
         cv::Mat transformedImagePaintableRansac = transformedImage.clone();
         cv::cvtColor(transformedImagePaintableRansac,transformedImagePaintableRansac,CV_GRAY2BGR);
 
-        debug_paintPolynom(transformedImagePaintableRansac, cv::Scalar(0,0,255), polyLeft, minYPolyRoi, maxYRoi);
-        debug_paintPolynom(transformedImagePaintableRansac, cv::Scalar(0,255,0), polyCenter, minYPolyRoi, maxYRoi);
-        debug_paintPolynom(transformedImagePaintableRansac, cv::Scalar(255,0,0), polyRight, minYPolyRoi, maxYRoi);
+        debugPaintPolynom(transformedImagePaintableRansac, cv::Scalar(0, 0, 255), polyLeft, minYPolyRoi, maxYRoi);
+        debugPaintPolynom(transformedImagePaintableRansac, cv::Scalar(0, 255, 0), polyCenter, minYPolyRoi, maxYRoi);
+        debugPaintPolynom(transformedImagePaintableRansac, cv::Scalar(255, 0, 0), polyRight, minYPolyRoi, maxYRoi);
 
-        debug_paintPolynom(transformedImagePaintableRansac, cv::Scalar(139,0,139), movedPolyLeft, minYPolyRoi, maxYRoi);
-        debug_paintPolynom(transformedImagePaintableRansac, cv::Scalar(0,0,0), movedPolyCenter, minYPolyRoi, maxYRoi);
-        debug_paintPolynom(transformedImagePaintableRansac, cv::Scalar(255,120,0), movedPolyRight, minYPolyRoi, maxYRoi);
+        debugPaintPolynom(transformedImagePaintableRansac, cv::Scalar(139, 0, 139), movedPolyLeft, minYPolyRoi, maxYRoi);
+        debugPaintPolynom(transformedImagePaintableRansac, cv::Scalar(0, 0, 0), movedPolyCenter, minYPolyRoi, maxYRoi);
+        debugPaintPolynom(transformedImagePaintableRansac, cv::Scalar(255, 120, 0), movedPolyRight, minYPolyRoi, maxYRoi);
 
 
         pubRGBImageMsg(transformedImagePaintableRansac, image_publisher_ransac);
@@ -388,9 +385,9 @@ ROS_ERROR("/generateMovedPolynomials");
     //---------------------- END DEBUG OUTPUT RANSAC POLYNOMIALS ------------------------------//
 
     //detectLane();
-ROS_ERROR("pubAngle");
+    ROS_ERROR("pubAngle");
     pubAngle();
-ROS_ERROR("/pubAngle");
+    ROS_ERROR("/pubAngle");
 
     cv::Mat transformedImagePaintableLaneModel = transformedImage.clone();
     cv::cvtColor(transformedImagePaintableLaneModel,transformedImagePaintableLaneModel,CV_GRAY2BGR);
@@ -472,12 +469,18 @@ ROS_ERROR("/pubAngle");
     //---------------------- END DEBUG OUTPUT LANE POLYNOMIAL ------------------------------//
 }
 
-void cLaneDetectionFu::debug_paintPolynom(cv::Mat &m, cv::Scalar color, NewtonPolynomial &p, int start, int end)
-{
+void cLaneDetectionFu::debugPaintPolynom(cv::Mat &m, cv::Scalar color, NewtonPolynomial &p, int start, int end) {
     cv::Point point;
     for (int i = start; i < end; i++) {
         point = cv::Point(p.at(i), i);
         cv::circle(m, point, 0, color, -1);
+    }
+}
+
+void cLaneDetectionFu::debugPaintPoints(cv::Mat &m, cv::Scalar color, vector<FuPoint<int>> &points) {
+    for(FuPoint<int> point : points) {
+        cv::Point pointLoc = cv::Point(point.getX(), point.getY());
+        cv::circle(m, pointLoc, 1, color, -1);
     }
 }
 
