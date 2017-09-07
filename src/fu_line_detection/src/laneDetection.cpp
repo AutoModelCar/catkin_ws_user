@@ -319,15 +319,10 @@ ROS_ERROR("/buildLaneMarkingsLists");
             cv::circle(transformedImagePaintable,markingLoc,1,cv::Scalar(0,255,255),-1);
         }
 
-        for(int i = minYPolyRoi; i < maxYRoi; i++)
-        {
-            cv::Point pointPoly1 = cv::Point(movedPolyLeft.at(i), i);
-            cv::circle(transformedImagePaintable,pointPoly1,0,cv::Scalar(139,0,139),-1);
-            cv::Point pointPoly2 = cv::Point(movedPolyCenter.at(i), i);
-            cv::circle(transformedImagePaintable,pointPoly2,0,cv::Scalar(0,0,0),-1);
-            cv::Point pointPoly3 = cv::Point(movedPolyRight.at(i), i);
-            cv::circle(transformedImagePaintable,pointPoly3,0,cv::Scalar(255,128,0),-1);
-        }
+        debug_paintPolynom(transformedImagePaintable, cv::Scalar(0,0,255), movedPolyLeft, minYPolyRoi, maxYRoi);
+        debug_paintPolynom(transformedImagePaintable, cv::Scalar(0,255,0), movedPolyCenter, minYPolyRoi, maxYRoi);
+        debug_paintPolynom(transformedImagePaintable, cv::Scalar(255,0,0), movedPolyRight, minYPolyRoi, maxYRoi);
+
 
         cv::Point2d p1l(defaultXLeft,minYPolyRoi);
         cv::Point2d p2l(defaultXLeft,maxYRoi-1);
@@ -372,25 +367,15 @@ ROS_ERROR("/generateMovedPolynomials");
     #ifdef PUBLISH_DEBUG_OUTPUT
         cv::Mat transformedImagePaintableRansac = transformedImage.clone();
         cv::cvtColor(transformedImagePaintableRansac,transformedImagePaintableRansac,CV_GRAY2BGR);
-        for(int i = minYPolyRoi; i < maxYRoi; i++)
-        {
-            cv::Point pointLocLeft = cv::Point(polyLeft.at(i), i);
-            cv::circle(transformedImagePaintableRansac,pointLocLeft,0,cv::Scalar(0,0,255),-1);
-            cv::Point pointLocCenter = cv::Point(polyCenter.at(i), i);
-            cv::circle(transformedImagePaintableRansac,pointLocCenter,0,cv::Scalar(0,255,0),-1);
-            cv::Point pointLocRight = cv::Point(polyRight.at(i), i);
-            cv::circle(transformedImagePaintableRansac,pointLocRight,0,cv::Scalar(255,0,0),-1);
-        }
 
-        for(int i = minYPolyRoi; i < maxYRoi; i++)
-        {
-            cv::Point pointPoly1 = cv::Point(movedPolyLeft.at(i), i);
-            cv::circle(transformedImagePaintableRansac,pointPoly1,0,cv::Scalar(139,0,139),-1);
-            cv::Point pointPoly2 = cv::Point(movedPolyCenter.at(i), i);
-            cv::circle(transformedImagePaintableRansac,pointPoly2,0,cv::Scalar(0,0,0),-1);
-            cv::Point pointPoly3 = cv::Point(movedPolyRight.at(i), i);
-            cv::circle(transformedImagePaintableRansac,pointPoly3,0,cv::Scalar(255,128,0),-1);
-        }
+        debug_paintPolynom(transformedImagePaintableRansac, cv::Scalar(0,0,255), polyLeft, minYPolyRoi, maxYRoi);
+        debug_paintPolynom(transformedImagePaintableRansac, cv::Scalar(0,255,0), polyCenter, minYPolyRoi, maxYRoi);
+        debug_paintPolynom(transformedImagePaintableRansac, cv::Scalar(255,0,0), polyRight, minYPolyRoi, maxYRoi);
+
+        debug_paintPolynom(transformedImagePaintableRansac, cv::Scalar(139,0,139), movedPolyLeft, minYPolyRoi, maxYRoi);
+        debug_paintPolynom(transformedImagePaintableRansac, cv::Scalar(0,0,0), movedPolyCenter, minYPolyRoi, maxYRoi);
+        debug_paintPolynom(transformedImagePaintableRansac, cv::Scalar(255,120,0), movedPolyRight, minYPolyRoi, maxYRoi);
+
 
         pubRGBImageMsg(transformedImagePaintableRansac, image_publisher_ransac);
 
@@ -487,7 +472,14 @@ ROS_ERROR("/pubAngle");
     //---------------------- END DEBUG OUTPUT LANE POLYNOMIAL ------------------------------//
 }
 
-
+void cLaneDetectionFu::debug_paintPolynom(cv::Mat &m, cv::Scalar color, NewtonPolynomial &p, int start, int end)
+{
+    cv::Point point;
+    for (int i = start; i < end; i++) {
+        point = cv::Point(p.at(i), i);
+        cv::circle(m, point, 0, color, -1);
+    }
+}
 
 /* EdgeDetector methods */
 
@@ -1015,6 +1007,12 @@ void cLaneDetectionFu::generateMovedPolynomials()
     movedPolyCenter.clear();
     movedPolyRight.clear();
     movedPointsRight.clear();
+
+        #ifdef PAINT_OUTPUT
+            movedPolyCenter = polyCenter;
+            movedPolyLeft = polyLeft;
+            movedPolyRight = polyRight;
+        #endif
 
     // TODO defaultXRight - defaultXCenter
     double laneWidth = 45.f;

@@ -257,6 +257,7 @@ class cLaneDetectionFu
         double adjacentLeg;
         double gradientForAngle;
 
+        void debug_paintPolynom(cv::Mat &m, cv::Scalar color, NewtonPolynomial &p, int start, int end);
 
     public:
                 
