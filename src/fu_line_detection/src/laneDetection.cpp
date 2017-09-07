@@ -406,84 +406,10 @@ ROS_ERROR("pubAngle");
     pubAngle();
 ROS_ERROR("/pubAngle");
 
-    #ifdef PAINT_OUTPUT
-        cv::Mat angleImg(120, 120, CV_8UC3, Scalar(255, 255, 255));
-    if (polyDetectedRight) {
-
-        for(int i = minYPolyRoi; i < maxYRoi; i++)
-        {
-            cv::Point pointLocRight = cv::Point(polyRight.at(i), i);
-            cv::circle(angleImg,pointLocRight,0,cv::Scalar(255,0,0),-1);
-        }
-
-        cv::Point pointLoc = cv::Point(proj_image_w_half, proj_image_h);
-        cv::circle(angleImg, pointLoc, 2, cv::Scalar(0,0,255), -1);
-
-        //cv::Point anglePointLoc = cv::Point(sin(lastAngle * PI / 180) * angleAdjacentLeg + proj_image_w_half, proj_image_h - angleAdjacentLeg);
-        //cv::line(angleImg, pointLoc, anglePointLoc, cv::Scalar(0,0,255));
-
-        cv::Point startNormalPoint = cv::Point(pointForAngle.getX(), pointForAngle.getY());
-        cv::circle(angleImg, startNormalPoint, 2, cv::Scalar(100,100,100), -1);
-
-        cv::Point targetPoint = cv::Point(proj_image_w - movedPointForAngle.getX(), movedPointForAngle.getY());
-        cv::circle(angleImg, targetPoint, 2, cv::Scalar(0,0,255), -1);
-
-        //cv::Point adjacentLegPoint = cv::Point(proj_image_h - adjacentLeg, proj_image_w_half);
-        //cv::line(angleImg, pointLoc, adjacentLegPoint, cv::Scalar(255,0,0));
-
-        //cv::Point oppositeLegPoint = cv::Point(proj_image_h - adjacentLeg, proj_image_w_half + oppositeLeg);
-        //cv::line(angleImg, adjacentLegPoint, oppositeLegPoint, cv::Scalar(0,255,0));
-
-        // tangent
-        double mLocal = -1 / gradientForAngle;
-        double n = pointForAngle.getY() - mLocal * pointForAngle.getX();
-        double x = 0;
-        double y = mLocal * x + n;
-        cv::Point startTangent = cv::Point(x, y);
-        x = 120;
-        y = mLocal * x + n;
-        cv::Point endTangent = cv::Point(x, y);
-        cv::line(angleImg, startTangent, endTangent, cv::Scalar(102,0,204));
-
-        // normal vector
-        /*n = pointForAngle.getY() - gradientForAngle * pointForAngle.getX();
-        x = 10;
-        y = gradientForAngle * x + n;
-
-        cv::Point endNormalPoint = cv::Point(y, x);
-        cv::line(angleImg, startNormalPoint, endNormalPoint, cv::Scalar(0,0,0));*/
-    }
-
-        int startX = 20;
-        int startY = 20;
-        int endX = 20;
-        int endY = 30;
-
-        double m = 1.0f;
-        double offset = -10.f;
-
-        FuPoint<double> shiftStart = FuPoint<double>();
-        FuPoint<double> shiftEnd = FuPoint<double>();
-        shiftPoint(shiftStart, m, offset, startX, startY);
-        shiftPoint(shiftEnd, m, offset, endX, endY);
-
-        cv::Point startP = cv::Point(startX, startY);
-        cv::Point endP = cv::Point(endX, endY);
-        cv::line(angleImg, startP, endP, cv::Scalar(0,0,0));
-
-	    cv::Point shiftStartP = cv::Point(shiftStart.getX(), shiftStart.getY());
-        cv::Point shiftEndP = cv::Point(shiftEnd.getX(), shiftEnd.getY());
-        cv::line(angleImg, shiftStartP, shiftEndP, cv::Scalar(0,0,255));
-
-        cv::namedWindow("pubAngle", WINDOW_NORMAL);
-        cv::imshow("pubAngle", angleImg);
-        cv::waitKey(1);
-    #endif
-
     cv::Mat transformedImagePaintableLaneModel = transformedImage.clone();
     cv::cvtColor(transformedImagePaintableLaneModel,transformedImagePaintableLaneModel,CV_GRAY2BGR);
 
-    if (polyDetectedRight) {
+    if (polyDetectedRight || isPolyMovedRight) {
         int r = lanePolynomial.getLastUsedPosition() == LEFT ? 255 : 0;
         int g = lanePolynomial.getLastUsedPosition() == CENTER ? 255 : 0;
         int b = lanePolynomial.getLastUsedPosition() == RIGHT ? 255 : 0;
@@ -1219,9 +1145,9 @@ void cLaneDetectionFu::generateMovedPolynomials()
         movedPolyRight.addData(pointRight2);
         movedPolyRight.addData(pointRight3);
 
-        movedPointsRight.push_back(FuPoint<int>(pointRight1.getX(), pointRight1.getY()));
-        movedPointsRight.push_back(FuPoint<int>(pointRight2.getX(), pointRight2.getY()));
-        movedPointsRight.push_back(FuPoint<int>(pointRight3.getX(), pointRight3.getY()));
+        movedPointsRight.push_back(FuPoint<int>(pointRight1.getY(), pointRight1.getX()));
+        movedPointsRight.push_back(FuPoint<int>(pointRight2.getY(), pointRight2.getX()));
+        movedPointsRight.push_back(FuPoint<int>(pointRight3.getY(), pointRight3.getX()));
         ROS_ERROR("/movedRight");
     }
 
@@ -2160,7 +2086,8 @@ void cLaneDetectionFu::pubRGBImageMsg(cv::Mat& rgb_mat, image_transport::CameraP
 
 void cLaneDetectionFu::pubAngle() {
     if (!polyDetectedRight && !isPolyMovedRight) {
-	return;
+        ROS_ERROR("!polyDetectedRight && !isPolyMovedRight");
+	    return;
     }
 
     int y = proj_image_h - angleAdjacentLeg;
@@ -2170,14 +2097,14 @@ void cLaneDetectionFu::pubAngle() {
     ROS_ERROR("polyDetectedRight %d", polyDetectedRight);
 
     if (polyDetectedRight) {
-    ROS_ERROR(" polyDetectedRight");
+        ROS_ERROR(" polyDetectedRight");
         xRightLane = polyRight.at(y);
         m = gradient(y, pointsRight, polyRight.getCoefficients());
     } else {
-    ROS_ERROR(" !polyDetectedRight");
+        ROS_ERROR(" !polyDetectedRight");
         xRightLane = movedPolyRight.at(y);
         m = gradient(y, movedPointsRight, movedPolyRight.getCoefficients());
-    ROS_ERROR(" gradient %f", m);
+        ROS_ERROR(" gradient %f", m);
     }
 
     shiftPoint(movedPointForAngle, m, -22.f, (int) xRightLane, y);
