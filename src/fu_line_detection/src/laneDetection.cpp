@@ -2084,7 +2084,7 @@ bool cLaneDetectionFu::isSimilar(const NewtonPolynomial &poly1, const NewtonPoly
     FuPoint<int> p1 = FuPoint<int>(poly1.at(polyY1), polyY1);
     FuPoint<int> p2 = FuPoint<int>(poly2.at(polyY1), polyY1);
 
-    if (horizDistance(p1, p2) > 5) {//0.05 * meters) {
+    if (horizDistance(p1, p2) > interestDistancePoly) {//0.05 * meters) {
         //ROS_INFO("Poly was to far away from previous poly at y = 25");
         return false;
     }
@@ -2092,7 +2092,7 @@ bool cLaneDetectionFu::isSimilar(const NewtonPolynomial &poly1, const NewtonPoly
     FuPoint<int> p3 = FuPoint<int>(poly1.at(polyY2), polyY2);
     FuPoint<int> p4 = FuPoint<int>(poly2.at(polyY2), polyY2);
 
-    if (horizDistance(p3, p4) > 5) {//0.05 * meters) {
+    if (horizDistance(p3, p4) > interestDistancePoly) {//0.05 * meters) {
         //ROS_INFO("Poly was to far away from previous poly at y = 30");
         return false;
     }
@@ -2100,7 +2100,7 @@ bool cLaneDetectionFu::isSimilar(const NewtonPolynomial &poly1, const NewtonPoly
     FuPoint<int> p5 = FuPoint<int>(poly1.at(polyY3), polyY3);
     FuPoint<int> p6 = FuPoint<int>(poly2.at(polyY3), polyY3);
 
-    if (horizDistance(p5, p6) > 5) {//0.05 * meters) {
+    if (horizDistance(p5, p6) > interestDistancePoly) {//0.05 * meters) {
         //ROS_INFO("Poly was to far away from previous poly at y = 30");
         return false;
     }
