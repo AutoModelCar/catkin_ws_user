@@ -22,9 +22,9 @@
     <param name="angleAdjacentLeg"              type="int"    value="18"/>
     <param name="scanlinesVerticalDistance"     type="int"    value="2"/>
     <param name="scanlinesMaxCount"             type="int"    value="100"/>
-    <param name="polyY1"                        type="int"    value="19"/>
-    <param name="polyY2"                        type="int"    value="19"/>
-    <param name="polyY3"                        type="int"    value="20"/>
+    <param name="polyY1"                        type="int"    value="20"/>
+    <param name="polyY2"                        type="int"    value="50"/>
+    <param name="polyY3"                        type="int"    value="70"/>
     <param name="detectLaneStartX"              type="int"    value="8"/> <!--this was originally 0.7m, which is about 90 in our case... used for gradient computation, might help us to get rid of too crazy polynomials-->
     <param name="maxAngleDiff"                  type="int"    value="14"/>
 

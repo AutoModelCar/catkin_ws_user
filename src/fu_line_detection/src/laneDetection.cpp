@@ -1,3 +1,4 @@
+#include <sys/stat.h>
 #include "laneDetection.h"
 
 using namespace std;
@@ -9,6 +10,7 @@ using namespace std;
 #define PAINT_OUTPUT_LANE_MARKINGS
 //#define PAINT_OUTPUT_LANE_POLYNOMIALS
 #define PUBLISH_DEBUG_OUTPUT
+#define PUBLISH_DEBUG_IMAGES
 
 static const uint32_t MY_ROS_QUEUE_SIZE = 1;
 
@@ -171,6 +173,14 @@ cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh)
     //the outer vector represents rows on image, inner vector is vector of line segments of one row, usualy just one line segment
     //we should generate this only once in the beginning! or even just have it pregenerated for our cam
     scanlines = getScanlines();
+
+    #ifdef PUBLISH_DEBUG_IMAGES
+        mkdir("groupedLaneMarkings", S_IRWXU);
+        mkdir("ransac", S_IRWXU);
+
+        system("exec rm -r ./groupedLaneMarkings/*");
+        system("exec rm -r ./ransac/*");
+    #endif
 }
 
 cLaneDetectionFu::~cLaneDetectionFu()
@@ -303,9 +313,9 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
         debugPaintPoints(transformedImagePaintable, cv::Scalar(255,0,0), laneMarkingsRight);
         debugPaintPoints(transformedImagePaintable, cv::Scalar(0,255,255), laneMarkingsNotUsed);
 
-        debugPaintPolynom(transformedImagePaintable, cv::Scalar(0, 255, 255), movedPolyLeft, minYPolyRoi, maxYRoi);
-        debugPaintPolynom(transformedImagePaintable, cv::Scalar(255, 255, 0), movedPolyCenter, minYPolyRoi, maxYRoi);
-        debugPaintPolynom(transformedImagePaintable, cv::Scalar(255, 0, 255), movedPolyRight, minYPolyRoi, maxYRoi);
+        debugPaintPolynom(transformedImagePaintable, cv::Scalar(0, 255, 255), polyDetectedLeft ? polyLeft : movedPolyLeft, minYPolyRoi, maxYRoi);
+        debugPaintPolynom(transformedImagePaintable, cv::Scalar(255, 255, 0), polyDetectedCenter ? polyCenter : movedPolyCenter, minYPolyRoi, maxYRoi);
+        debugPaintPolynom(transformedImagePaintable, cv::Scalar(255, 0, 255), polyDetectedRight ? polyRight : movedPolyRight, minYPolyRoi, maxYRoi);
 
         cv::Point2d p1l(defaultXLeft,minYPolyRoi);
         cv::Point2d p2l(defaultXLeft,maxYRoi-1);
@@ -340,10 +350,9 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
             cv::imshow("Grouped Lane Markings", transformedImagePaintable);
             cv::waitKey(1);
 
-            stringstream img;
-            img << "./frames/" << frame++ << ".jpg";
-            cv::imwrite(img.str(), transformedImagePaintable);
-
+            #ifdef PUBLISH_DEBUG_IMAGES
+                debugWriteImg(transformedImagePaintable, "groupedLaneMarkings");
+            #endif
         #endif
     #endif
     //---------------------- END DEBUG OUTPUT GROUPED LANE MARKINGS ------------------------------//
@@ -380,6 +389,10 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
             cv::namedWindow("RANSAC results", WINDOW_NORMAL);
             cv::imshow("RANSAC results", transformedImagePaintableRansac);
             cv::waitKey(1);
+
+            #ifdef PUBLISH_DEBUG_IMAGES
+                debugWriteImg(transformedImagePaintableRansac, "ransac");
+            #endif
         #endif
     #endif
     //---------------------- END DEBUG OUTPUT RANSAC POLYNOMIALS ------------------------------//
@@ -467,6 +480,8 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
         cv::waitKey(1);
     #endif
     //---------------------- END DEBUG OUTPUT LANE POLYNOMIAL ------------------------------//
+
+    frame++;
 }
 
 void cLaneDetectionFu::debugPaintPolynom(cv::Mat &m, cv::Scalar color, NewtonPolynomial &p, int start, int end) {
@@ -482,6 +497,12 @@ void cLaneDetectionFu::debugPaintPoints(cv::Mat &m, cv::Scalar color, vector<FuP
         cv::Point pointLoc = cv::Point(point.getX(), point.getY());
         cv::circle(m, pointLoc, 1, color, -1);
     }
+}
+
+void cLaneDetectionFu::debugWriteImg(cv::Mat &image, string folder) {
+    stringstream img;
+    img << "./" << folder << "/" << frame << ".jpg";
+    cv::imwrite(img.str(), image);
 }
 
 /* EdgeDetector methods */
@@ -1000,22 +1021,20 @@ void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, i
 
 void cLaneDetectionFu::generateMovedPolynomials()
 {
-    ROS_ERROR("non detected");
-    if (!polyDetectedLeft && !polyDetectedCenter && !polyDetectedRight) return;
-    ROS_ERROR("/non all detected");
-    if (polyDetectedLeft && polyDetectedCenter && polyDetectedRight) return;
-    ROS_ERROR("all detected");
-
     movedPolyLeft.clear();
     movedPolyCenter.clear();
     movedPolyRight.clear();
     movedPointsRight.clear();
 
-        #ifdef PAINT_OUTPUT
-            movedPolyCenter = polyCenter;
-            movedPolyLeft = polyLeft;
-            movedPolyRight = polyRight;
-        #endif
+    isPolyMovedLeft = false;
+    isPolyMovedCenter = false;
+    isPolyMovedRight = false;
+
+    ROS_ERROR("non detected");
+    if (!polyDetectedLeft && !polyDetectedCenter && !polyDetectedRight) return;
+    ROS_ERROR("/non all detected");
+    if (polyDetectedLeft && polyDetectedCenter && polyDetectedRight) return;
+    ROS_ERROR("all detected");
 
     // TODO defaultXRight - defaultXCenter
     double laneWidth = 45.f;
@@ -1031,10 +1050,6 @@ void cLaneDetectionFu::generateMovedPolynomials()
     FuPoint<double> pointRight1 = FuPoint<double>();
     FuPoint<double> pointRight2 = FuPoint<double>();
     FuPoint<double> pointRight3 = FuPoint<double>();
-
-    bool movedLeft = false;
-    bool movedCenter = false;
-    bool movedRight = false;
 
     double m1 = 0;
     double m2 = 0;
@@ -1059,14 +1074,14 @@ void cLaneDetectionFu::generateMovedPolynomials()
         m2 = gradient(pointsRight.at(1).getY(), pointsRight, usedPoly.getCoefficients());
         m3 = gradient(pointsRight.at(2).getY(), pointsRight, usedPoly.getCoefficients());
 
-        movedCenter = true;
+        isPolyMovedCenter = true;
 
         shiftPoint(pointCenter1,m1, -laneWidth, pointsRight.at(0));
         shiftPoint(pointCenter2,m2, -laneWidth, pointsRight.at(1));
         shiftPoint(pointCenter3,m3, -laneWidth, pointsRight.at(2));
 
         if (!polyDetectedLeft) {
-            movedLeft = true;
+            isPolyMovedLeft = true;
 
             shiftPoint(pointLeft1,m1, -2 * laneWidth, pointsRight.at(0));
             shiftPoint(pointLeft2,m2, -2 * laneWidth, pointsRight.at(1));
@@ -1081,14 +1096,14 @@ void cLaneDetectionFu::generateMovedPolynomials()
         m2 = gradient(pointsLeft.at(1).getY(), pointsLeft, usedPoly.getCoefficients());
         m3 = gradient(pointsLeft.at(2).getY(), pointsLeft, usedPoly.getCoefficients());
 
-        movedCenter = true;
+        isPolyMovedCenter = true;
 
         shiftPoint(pointCenter1,m1, laneWidth, pointsLeft.at(0));
         shiftPoint(pointCenter2,m2, laneWidth, pointsLeft.at(1));
         shiftPoint(pointCenter3,m3, laneWidth, pointsLeft.at(2));
 
         if (!polyDetectedRight) {
-            movedRight = true;
+            isPolyMovedRight = true;
 
             shiftPoint(pointRight1,m1, 2 * laneWidth, pointsLeft.at(0));
             shiftPoint(pointRight2,m2, 2 * laneWidth, pointsLeft.at(1));
@@ -1104,7 +1119,7 @@ void cLaneDetectionFu::generateMovedPolynomials()
         m3 = gradient(pointsCenter.at(2).getY(), pointsCenter, usedPoly.getCoefficients());
 
         if (!polyDetectedLeft) {
-            movedLeft = true;
+            isPolyMovedLeft = true;
 
             shiftPoint(pointLeft1,m1, -laneWidth, pointsCenter.at(0));
             shiftPoint(pointLeft2,m2, -laneWidth, pointsCenter.at(1));
@@ -1114,7 +1129,7 @@ void cLaneDetectionFu::generateMovedPolynomials()
         ROS_ERROR("polyDetectedRight %d", polyDetectedRight);
         if (!polyDetectedRight) {
         ROS_ERROR("!polyDetectedRight");
-            movedRight = true;
+            isPolyMovedRight = true;
 
             shiftPoint(pointRight1,m1, laneWidth, pointsCenter.at(0));
             shiftPoint(pointRight2,m2, laneWidth, pointsCenter.at(1));
@@ -1125,7 +1140,7 @@ void cLaneDetectionFu::generateMovedPolynomials()
 
     // create the lane polynomial out of the shifted points
 
-    if (movedLeft) {
+    if (isPolyMovedLeft) {
         ROS_ERROR("movedLeft");
         movedPolyLeft.addData(pointLeft1);
         movedPolyLeft.addData(pointLeft2);
@@ -1133,7 +1148,7 @@ void cLaneDetectionFu::generateMovedPolynomials()
         ROS_ERROR("/movedLeft");
     }
 
-    if (movedCenter) {
+    if (isPolyMovedCenter) {
         ROS_ERROR("movedCenter");
         movedPolyCenter.addData(pointCenter1);
         movedPolyCenter.addData(pointCenter2);
@@ -1141,7 +1156,7 @@ void cLaneDetectionFu::generateMovedPolynomials()
         ROS_ERROR("/movedCenter");
     }
 
-    if (movedRight) {
+    if (isPolyMovedRight) {
         ROS_ERROR("movedRight");
         movedPolyRight.addData(pointRight1);
         movedPolyRight.addData(pointRight2);
@@ -1152,8 +1167,6 @@ void cLaneDetectionFu::generateMovedPolynomials()
         movedPointsRight.push_back(FuPoint<int>(pointRight3.getY(), pointRight3.getX()));
         ROS_ERROR("/movedRight");
     }
-
-    isPolyMovedRight = movedRight;
 }
 
 bool cLaneDetectionFu::isInRange(FuPoint<int> &lanePoint, FuPoint<int> &p) {
@@ -2012,23 +2025,31 @@ bool cLaneDetectionFu::polyValid(ePosition position, NewtonPolynomial poly,
         NewtonPolynomial prevPoly) {
 
     if (prevPoly.getDegree() != -1) {
-        FuPoint<int> p4 = FuPoint<int>(poly.at(polyY1), polyY1);
-        FuPoint<int> p5 = FuPoint<int>(prevPoly.at(polyY1), polyY1);
-
-        if (horizDistance(p4, p5) > 5) {//0.05 * meters) {
-            //ROS_INFO("Poly was to far away from previous poly at y = 25");
-            return false;
+        return isSimilar(poly, prevPoly);
+    }
+    if (position == RIGHT) {
+        if (polyDetectedRight) {
+            return isSimilar(poly, polyRight);
         }
-
-        FuPoint<int> p6 = FuPoint<int>(poly.at(polyY2), polyY2);
-        FuPoint<int> p7 = FuPoint<int>(prevPoly.at(polyY2), polyY2);
-
-        if (horizDistance(p6, p7) > 5) {//0.05 * meters) {
-            //ROS_INFO("Poly was to far away from previous poly at y = 30");
-            return false;
+        if (isPolyMovedRight) {
+            return isSimilar(poly, movedPolyRight);
         }
-
-        return true;
+    }
+    if (position == CENTER) {
+        if (polyDetectedCenter) {
+            return isSimilar(poly, polyCenter);
+        }
+        if (isPolyMovedCenter) {
+            return isSimilar(poly, movedPolyCenter);
+        }
+    }
+    if (position == LEFT) {
+        if (polyDetectedLeft) {
+            return isSimilar(poly, polyLeft);
+        }
+        if (isPolyMovedLeft) {
+            return isSimilar(poly, movedPolyLeft);
+        }
     }
 
     /*FuPoint<int> p1 = FuPoint<int>(poly.at(polyY1), polyY1);    //y = 75
@@ -2057,7 +2078,35 @@ bool cLaneDetectionFu::polyValid(ePosition position, NewtonPolynomial poly,
     return true;
 }
 
+bool cLaneDetectionFu::isSimilar(const NewtonPolynomial &poly1, const NewtonPolynomial &poly2) {
+    //ROS_ERROR("y1: %d, y2: %d, y3: %d", polyY1, polyY2, polyY3);
 
+    FuPoint<int> p1 = FuPoint<int>(poly1.at(polyY1), polyY1);
+    FuPoint<int> p2 = FuPoint<int>(poly2.at(polyY1), polyY1);
+
+    if (horizDistance(p1, p2) > 5) {//0.05 * meters) {
+        //ROS_INFO("Poly was to far away from previous poly at y = 25");
+        return false;
+    }
+
+    FuPoint<int> p3 = FuPoint<int>(poly1.at(polyY2), polyY2);
+    FuPoint<int> p4 = FuPoint<int>(poly2.at(polyY2), polyY2);
+
+    if (horizDistance(p3, p4) > 5) {//0.05 * meters) {
+        //ROS_INFO("Poly was to far away from previous poly at y = 30");
+        return false;
+    }
+
+    FuPoint<int> p5 = FuPoint<int>(poly1.at(polyY3), polyY3);
+    FuPoint<int> p6 = FuPoint<int>(poly2.at(polyY3), polyY3);
+
+    if (horizDistance(p5, p6) > 5) {//0.05 * meters) {
+        //ROS_INFO("Poly was to far away from previous poly at y = 30");
+        return false;
+    }
+
+    return true;
+}
 
 void cLaneDetectionFu::pubRGBImageMsg(cv::Mat& rgb_mat, image_transport::CameraPublisher publisher)
 {

@@ -237,7 +237,9 @@ class cLaneDetectionFu
         NewtonPolynomial movedPolyCenter;
         NewtonPolynomial movedPolyRight;
 
-	bool isPolyMovedRight;
+	    bool isPolyMovedRight = false;
+	    bool isPolyMovedCenter = false;
+	    bool isPolyMovedLeft = false;
 
         vector<FuPoint<int>> movedPointsRight;
 
@@ -260,6 +262,8 @@ class cLaneDetectionFu
         void debugPaintPolynom(cv::Mat &m, cv::Scalar color, NewtonPolynomial &p, int start, int end);
 
         void debugPaintPoints(cv::Mat &m, cv::Scalar color, std::vector<FuPoint<int>> &points);
+
+        void debugWriteImg(cv::Mat &image, string folder);
 
     public:
                 
@@ -310,6 +314,8 @@ class cLaneDetectionFu
                 std::vector<FuPoint<int>>& points);
 
         bool polyValid(ePosition, NewtonPolynomial, NewtonPolynomial);
+
+        bool isSimilar(const NewtonPolynomial &poly1, const NewtonPolynomial &poly2);
 
         int horizDistance(FuPoint<int> &p1, FuPoint<int> &p2);
 
