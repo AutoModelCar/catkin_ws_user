@@ -1010,7 +1010,7 @@ void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, F
  */
 void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, int x, int y)
 {
-    if (m > 0) {
+    if (m >= 0) {
         p.setX(x - offset * sin(atan(-1 / m)));
         p.setY(y - offset * cos(atan(-1 / m)));
         return;
