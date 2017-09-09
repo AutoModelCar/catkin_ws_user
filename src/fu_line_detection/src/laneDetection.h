@@ -259,6 +259,8 @@ class cLaneDetectionFu
         double adjacentLeg;
         double gradientForAngle;
 
+        double laneWidth = 45.f;
+
         void debugPaintPolynom(cv::Mat &m, cv::Scalar color, NewtonPolynomial &p, int start, int end);
 
         void debugPaintPoints(cv::Mat &m, cv::Scalar color, std::vector<FuPoint<int>> &points);

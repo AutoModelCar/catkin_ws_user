@@ -8,9 +8,9 @@ using namespace std;
 //#define PAINT_OUTPUT_IP_MAPPED_IMAGE
 //#define PAINT_OUTPUT_ROI
 #define PAINT_OUTPUT_LANE_MARKINGS
-//#define PAINT_OUTPUT_LANE_POLYNOMIALS
+#define PAINT_OUTPUT_LANE_POLYNOMIALS
 #define PUBLISH_DEBUG_OUTPUT
-#define PUBLISH_DEBUG_IMAGES
+//#define PUBLISH_DEBUG_IMAGES
 
 static const uint32_t MY_ROS_QUEUE_SIZE = 1;
 
@@ -828,7 +828,8 @@ void cLaneDetectionFu::findLanePositions(vector<FuPoint<int>> &laneMarkings) {
     }
 
     if (defaultXCenter > 0 && defaultXRight > 0) {
-        defaultXLeft = defaultXCenter - (defaultXRight - defaultXCenter);
+        laneWidth = defaultXRight - defaultXCenter;
+        defaultXLeft = defaultXCenter - (int) laneWidth;
     }
 
     ROS_ERROR("left: %d, center: %d, right: %d", defaultXLeft, defaultXCenter, defaultXRight);
@@ -898,47 +899,7 @@ void cLaneDetectionFu::buildLaneMarkingsLists(
 
     for (FuPoint<int> laneMarking : laneMarkings) {
 
-        if (movedPolyLeft.isInitialized()) {
-            if (isInPolyRoi(movedPolyLeft, laneMarking)) {
-                laneMarkingsLeft.push_back(laneMarking);
-                continue;
-            }
-        }
-
-        if (movedPolyCenter.isInitialized()) {
-            if (isInPolyRoi(movedPolyCenter, laneMarking)) {
-                laneMarkingsCenter.push_back(laneMarking);
-                continue;
-            }
-        }
-
-        if (movedPolyRight.isInitialized()) {
-            if (isInPolyRoi(movedPolyRight, laneMarking)) {
-                laneMarkingsRight.push_back(laneMarking);
-                continue;
-            }
-        }
-
-        if (laneMarkingsRight.size() > 0) {
-            if (isInRange(laneMarkingsRight.at(laneMarkingsRight.size() - 1), laneMarking)) {
-                laneMarkingsRight.push_back(laneMarking);
-                continue;
-            }
-        }
-
-        if (laneMarkingsCenter.size() > 0) {
-            if (isInRange(laneMarkingsCenter.at(laneMarkingsCenter.size() - 1), laneMarking)) {
-                laneMarkingsCenter.push_back(laneMarking);
-                continue;
-            }
-        }
-
-        if (laneMarkingsLeft.size() > 0) {
-            if (isInRange(laneMarkingsLeft.at(laneMarkingsLeft.size() - 1), laneMarking)) {
-                laneMarkingsLeft.push_back(laneMarking);
-                continue;
-            }
-        }
+        // check if lane marking point is near to found lane poly of ransac
 
         if (polyDetectedRight) {
             if (isInPolyRoi(polyRight, laneMarking)) {
@@ -961,6 +922,59 @@ void cLaneDetectionFu::buildLaneMarkingsLists(
             }
         }
 
+        // check if lane marking point is near to moved poly of ransac
+
+        if (movedPolyLeft.isInitialized()) {
+            if (isInPolyRoi(movedPolyLeft, laneMarking)) {
+                laneMarkingsLeft.push_back(laneMarking);
+                continue;
+            }
+        }
+
+        if (movedPolyCenter.isInitialized()) {
+            if (isInPolyRoi(movedPolyCenter, laneMarking)) {
+                laneMarkingsCenter.push_back(laneMarking);
+                continue;
+            }
+        }
+
+        if (movedPolyRight.isInitialized()) {
+            if (isInPolyRoi(movedPolyRight, laneMarking)) {
+                laneMarkingsRight.push_back(laneMarking);
+                continue;
+            }
+        }
+
+        // if ransac found a polynomial in last frame skip default lane comparison
+        if (polyDetectedLeft || polyDetectedCenter || polyDetectedRight) {
+            continue;
+        }
+
+        // no poly available from last frame, check if lane marking point is near to
+        // default lane or near to already classified point (this way points are also
+        // classified properly if car starts in a turn)
+
+        if (laneMarkingsRight.size() > 0) {
+            if (isInRange(laneMarkingsRight.at(laneMarkingsRight.size() - 1), laneMarking)) {
+                laneMarkingsRight.push_back(laneMarking);
+                continue;
+            }
+        }
+
+        if (laneMarkingsCenter.size() > 0) {
+            if (isInRange(laneMarkingsCenter.at(laneMarkingsCenter.size() - 1), laneMarking)) {
+                laneMarkingsCenter.push_back(laneMarking);
+                continue;
+            }
+        }
+
+        if (laneMarkingsLeft.size() > 0) {
+            if (isInRange(laneMarkingsLeft.at(laneMarkingsLeft.size() - 1), laneMarking)) {
+                laneMarkingsLeft.push_back(laneMarking);
+                continue;
+            }
+        }
+
         if (isInDefaultRoi(RIGHT, laneMarking)) {
             laneMarkingsRight.push_back(laneMarking);
             continue;
@@ -975,22 +989,6 @@ void cLaneDetectionFu::buildLaneMarkingsLists(
             laneMarkingsLeft.push_back(laneMarking);
             continue;
         }
-
-        /*if (laneMarkingsRight.size() == 0) {
-
-        } else {
-
-
-            double x1 = laneMarking.getX();
-            double x2 = laneMarkingsRight.at(laneMarkingsRight.size() - 1).getX();
-            double y1 = laneMarking.getY();
-            double y2 = laneMarkingsRight.at(laneMarkingsRight.size() - 1).getY();
-
-            double x = std::abs(x1 - x2);
-            double y = std::abs(y1 - y2);
-
-            ROS_ERROR("x1: %f, x2: %f, y1: %f, y2: %f, x: %f, y: %f", x1, x2, y1, y2, x, y);
-        }*/
 
         laneMarkingsNotUsed.push_back(laneMarking);
     }
@@ -1035,9 +1033,6 @@ void cLaneDetectionFu::generateMovedPolynomials()
     ROS_ERROR("/non all detected");
     if (polyDetectedLeft && polyDetectedCenter && polyDetectedRight) return;
     ROS_ERROR("all detected");
-
-    // TODO defaultXRight - defaultXCenter
-    double laneWidth = 45.f;
 
     FuPoint<double> pointLeft1 = FuPoint<double>();
     FuPoint<double> pointLeft2 = FuPoint<double>();
@@ -2158,7 +2153,8 @@ void cLaneDetectionFu::pubAngle() {
         ROS_ERROR(" gradient %f", m);
     }
 
-    shiftPoint(movedPointForAngle, m, -22.f, (int) xRightLane, y);
+    double offset = -1 * laneWidth / 2;
+    shiftPoint(movedPointForAngle, m, offset, (int) xRightLane, y);
 
     pointForAngle.setX(xRightLane);
     pointForAngle.setY(y);
