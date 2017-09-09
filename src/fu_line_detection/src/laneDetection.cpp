@@ -191,6 +191,10 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
 {
     //ROS_ERROR_STREAM("defaultXLeft: "<<defaultXLeft);
 
+    struct timeval tp;
+    gettimeofday(&tp, NULL);
+    long int start = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+
     // clear some stuff from the last cycle
     bestPolyLeft = std::make_pair(NewtonPolynomial(), 0);
     bestPolyCenter = std::make_pair(NewtonPolynomial(), 0);
@@ -214,8 +218,16 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
         cv::waitKey(1);
     #endif
 
+    gettimeofday(&tp, NULL);
+    long int ms1 = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+
     //Mat cut_image = image(cv::Rect(0,cam_h/2,cam_w,cam_h/2));
     Mat remapped_image = ipMapper.remap(cut_image);
+
+    gettimeofday(&tp, NULL);
+    long int ms2 = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+
+    ROS_ERROR("remap time: %d", (ms2 - ms1));
 
     #ifdef PAINT_OUTPUT_IP_MAPPED_IMAGE
         cv::imshow("IPmapped image", remapped_image);
@@ -472,6 +484,11 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
     //---------------------- END DEBUG OUTPUT LANE POLYNOMIAL ------------------------------//
 
     frame++;
+
+    gettimeofday(&tp, NULL);
+    long int end = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+
+    ROS_ERROR("Frame time: %d", (end -start));
 }
 
 void cLaneDetectionFu::debugPaintPolynom(cv::Mat &m, cv::Scalar color, NewtonPolynomial &p, int start, int end) {
@@ -807,16 +824,6 @@ void cLaneDetectionFu::findLanePositions(vector<FuPoint<int>> &laneMarkings) {
 
 defaultLineCalculation:
 
-    int i = 0;
-    for (FuPoint<int>* p : centerStart) {
-        ROS_ERROR("center: %d, %d, %d", p->getX(), p->getY(), centerSupporter.at(i++));
-    }
-
-    i = 0;
-    for (FuPoint<int>* p : rightStart) {
-        ROS_ERROR("right: %d, %d, %d", p->getX(), p->getY(), rightSupporter.at(i++));
-    }
-
     // use x-value of lane marking point with most (and at least 3) supporters
     if (centerStart.size() > 0) {
         vector<int>::iterator maxCenterElement = max_element(centerSupporter.begin(), centerSupporter.end());
@@ -841,7 +848,7 @@ defaultLineCalculation:
         defaultXLeft = defaultXCenter - (int) laneWidth;
     }
 
-    ROS_ERROR("left: %d, center: %d, right: %d", defaultXLeft, defaultXCenter, defaultXRight);
+    //ROS_ERROR("left: %d, center: %d, right: %d", defaultXLeft, defaultXCenter, defaultXRight);
 }
 
 /**
