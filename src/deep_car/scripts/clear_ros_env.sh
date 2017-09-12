@@ -1,0 +1,5 @@
+
+unset QT_X11_NO_MITSHM=1
+unset ROS_MASTER_URI
+unset ROS_IP
+unset ROS_HOSTNAME
