@@ -6,7 +6,7 @@ using namespace std;
 #define PAINT_OUTPUT
 //#define PAINT_OUTPUT_CUT_IMAGE
 //#define PAINT_OUTPUT_IP_MAPPED_IMAGE
-//#define PAINT_OUTPUT_ROI
+#define PAINT_OUTPUT_ROI
 #define PAINT_OUTPUT_LANE_MARKINGS
 #define PAINT_OUTPUT_LANE_POLYNOMIALS
 #define PUBLISH_DEBUG_OUTPUT
@@ -33,9 +33,7 @@ const static int g_kernel1DWidth = 5;
 
 std::size_t frame = 0;
 
-cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh)
-    : nh_(nh), priv_nh_("~")
-{
+cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh) : nh_(nh), priv_nh_("~") {
     std::string node_name = ros::this_node::getName();
 
     ROS_ERROR("Node name: %s",node_name.c_str());
@@ -138,6 +136,7 @@ cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh)
     movedPointForAngle = FuPoint<double>();
     pointForAngle = FuPoint<double>();
 
+    debugUtils = DebugUtils();
 
     maxDistance = 1;
 
@@ -160,8 +159,7 @@ cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh)
 
 
 
-    if (!rgb_camera_info)
-    {
+    if (!rgb_camera_info) {
         rgb_camera_info.reset(new sensor_msgs::CameraInfo());
         rgb_camera_info->width = proj_image_w;
         rgb_camera_info->height = proj_image_h+50;
@@ -182,12 +180,10 @@ cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh)
     #endif
 }
 
-cLaneDetectionFu::~cLaneDetectionFu()
-{
+cLaneDetectionFu::~cLaneDetectionFu() {
 }
 
-void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
-{
+void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg) {
     // clear some stuff from the last cycle
     bestPolyLeft = std::make_pair(NewtonPolynomial(), 0);
     bestPolyCenter = std::make_pair(NewtonPolynomial(), 0);
@@ -226,38 +222,7 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
 
     //---------------------- DEBUG OUTPUT EDGES ---------------------------------//
     #ifdef PAINT_OUTPUT_ROI
-        transformedImagePaintable = transformedImage.clone();
-        cv::cvtColor(transformedImagePaintable,transformedImagePaintable,CV_GRAY2BGR);
-        for(int i = 0; i < (int)edges.size(); i++)
-        {
-            for(int j=0; j < edges[i].size(); j++) {
-                FuPoint<int> edge = edges[i][j].getImgPos();
-                cv::Point edgeLoc = cv::Point(edge.getX(), edge.getY());
-                cv::circle(transformedImagePaintable,edgeLoc,1,cv::Scalar(0,0,edges[i][j].getValue()),-1);    
-            }            
-        }
-
-        /*cv::Point2d p1(proj_image_w_half-(roi_bottom_w/2),maxYRoi-1);
-        cv::Point2d p2(proj_image_w_half+(roi_bottom_w/2),maxYRoi-1);
-        cv::Point2d p3(proj_image_w_half+(roi_top_w/2),minYPolyRoi);
-        cv::Point2d p4(proj_image_w_half-(roi_top_w/2),minYPolyRoi);
-        cv::line(transformedImagePaintable,p1,p2,cv::Scalar(0,200,0));
-        cv::line(transformedImagePaintable,p2,p3,cv::Scalar(0,200,0));
-        cv::line(transformedImagePaintable,p3,p4,cv::Scalar(0,200,0));
-        cv::line(transformedImagePaintable,p4,p1,cv::Scalar(0,200,0));*/
-
-        /*for(int i = 0; i < (int)scanlines.size(); i++)
-        {         
-            LineSegment<int> scanline = scanlines[i][0];
-            cv::Point scanlineStart = cv::Point(scanline.getStart().getX(), scanline.getStart().getY());
-            cv::Point scanlineEnd = cv::Point(scanline.getEnd().getX(), scanline.getEnd().getY());
-            cv::line(transformedImagePaintable,scanlineStart,scanlineEnd,cv::Scalar(255,0,0));   
-        }*/
-
-
-        cv::namedWindow("ROI, scanlines and edges", WINDOW_NORMAL);
-        cv::imshow("ROI, scanlines and edges", transformedImagePaintable);
-        cv::waitKey(1);
+        debugUtils.paintOutputRoi(transformedImage, edges);
     #endif
     //---------------------- END DEBUG OUTPUT EDGES ------------------------------//
 

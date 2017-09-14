@@ -56,6 +56,7 @@ THIS SOFTWARE IS PROVIDED BY AUDI AG AND CONTRIBUTORS �AS IS� AND ANY EXPRES
 #include "tools/LanePolynomial.h"
 #include "tools/enums.h"
 #include "tools/IPMapper.h"
+#include "tools/DebugUtils.h"
 
 #include <dynamic_reconfigure/server.h>
 #include <line_detection_fu/LaneDetectionConfig.h>
@@ -242,6 +243,8 @@ class cLaneDetectionFu
 	    bool isPolyMovedLeft = false;
 
         vector<FuPoint<int>> movedPointsRight;
+
+        DebugUtils debugUtils;
 
         int laneMarkingSquaredThreshold;
 
