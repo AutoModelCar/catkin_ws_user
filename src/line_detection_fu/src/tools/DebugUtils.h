@@ -8,11 +8,10 @@
 
 #include <stdlib.h>
 
-using namespace std;
 
 class DebugUtils {
 public:
     DebugUtils();
 
-    void paintOutputRoi(cv::Mat img, vector<vector<EdgePoint>> edges);
+    void paintOutputRoi(cv::Mat img, std::vector<std::vector<EdgePoint>> edges);
 };

@@ -1,11 +1,11 @@
 #include "DebugUtils.h"
 
 using namespace std;
+using namespace cv;
 
-DebugUtils() {
-}
+DebugUtils::DebugUtils() {}
 
-void paintOutputRoi(cv::Mat img, vector<vector<EdgePoint>> edges) {
+void DebugUtils::paintOutputRoi(cv::Mat img, vector<vector<EdgePoint>> edges) {
     cv::Mat transformedImagePaintable = img.clone();
     cv::cvtColor(transformedImagePaintable,transformedImagePaintable,CV_GRAY2BGR);
     for(int i = 0; i < (int)edges.size(); i++)
