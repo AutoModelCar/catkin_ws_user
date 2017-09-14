@@ -35,7 +35,6 @@ THIS SOFTWARE IS PROVIDED BY AUDI AG AND CONTRIBUTORS �AS IS� AND ANY EXPRES
 #include <ros/ros.h>
 #include <sensor_msgs/Image.h>
 #include <std_msgs/Float32.h>
-#include <sensor_msgs/image_encodings.h>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -64,9 +63,9 @@ THIS SOFTWARE IS PROVIDED BY AUDI AG AND CONTRIBUTORS �AS IS� AND ANY EXPRES
 
 using namespace std;
 
+class DebugUtils;
 
-class cLaneDetectionFu
-{
+class cLaneDetectionFu {
     private:
 
         // the node handle
@@ -227,13 +226,6 @@ class cLaneDetectionFu
         NewtonPolynomial prevPolyCenter;
         NewtonPolynomial prevPolyRight;
 
-        /**
-         * The polynomial representing the center of the right lane
-         */
-        NewtonPolynomial lanePoly;
-
-        LanePolynomial lanePolynomial;
-
         NewtonPolynomial movedPolyLeft;
         NewtonPolynomial movedPolyCenter;
         NewtonPolynomial movedPolyRight;
@@ -264,25 +256,19 @@ class cLaneDetectionFu
 
         double laneWidth = 45.f;
 
-        void debugPaintPolynom(cv::Mat &m, cv::Scalar color, NewtonPolynomial &p, int start, int end);
-
-        void debugPaintPoints(cv::Mat &m, cv::Scalar color, std::vector<FuPoint<int>> &points);
-
-        void debugWriteImg(cv::Mat &image, string folder);
-
     public:
+
+        static const uint32_t MY_ROS_QUEUE_SIZE = 1;
+
+        static constexpr double PI = 3.14159265;
                 
     	cLaneDetectionFu(ros::NodeHandle nh);
 
     	virtual ~cLaneDetectionFu();
         
         void ProcessInput(const sensor_msgs::Image::ConstPtr& msg);
-        
-        void pubRGBImageMsg(cv::Mat& rgb_mat, image_transport::CameraPublisher publisher);
 
         void pubAngle();
-
-        void pubGradientAngle();
 
         std::vector<std::vector<LineSegment<int>> > getScanlines();
 
