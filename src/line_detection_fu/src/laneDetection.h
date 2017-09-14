@@ -321,14 +321,7 @@ class cLaneDetectionFu
 
         int horizDistance(FuPoint<int> &p1, FuPoint<int> &p2);
 
-        void createLanePoly(ePosition position);
-
-        void detectLane();
-
-        double gradient(double, std::vector<FuPoint<int>>&,
-                std::vector<double>);
-
-        double gradient(double x, NewtonPolynomial polynomial);
+        double gradient(double, std::vector<FuPoint<int>>&, std::vector<double>);
 
         double intersection(FuPoint<double>&, double&, std::vector<FuPoint<int>>&,
                 std::vector<double>&);

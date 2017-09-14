@@ -147,7 +147,6 @@ cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh)
     
     read_images_ = nh.subscribe(nh_.resolveName(camera_name), MY_ROS_QUEUE_SIZE, &cLaneDetectionFu::ProcessInput,this);
 
-    //publish_curvature = nh.advertise<std_msgs::Float32>("/lane_model/curvature", MY_ROS_QUEUE_SIZE);
     publish_angle = nh.advertise<std_msgs::Float32>("/lane_model/angle", MY_ROS_QUEUE_SIZE);
 
     image_transport::ImageTransport image_transport(nh);
@@ -189,20 +188,10 @@ cLaneDetectionFu::~cLaneDetectionFu()
 
 void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
 {
-    //ROS_ERROR_STREAM("defaultXLeft: "<<defaultXLeft);
-
-    struct timeval tp;
-    gettimeofday(&tp, NULL);
-    long int start = tp.tv_sec * 1000 + tp.tv_usec / 1000;
-
     // clear some stuff from the last cycle
     bestPolyLeft = std::make_pair(NewtonPolynomial(), 0);
     bestPolyCenter = std::make_pair(NewtonPolynomial(), 0);
     bestPolyRight = std::make_pair(NewtonPolynomial(), 0);
-
-    /*supportersLeft.clear();
-    supportersCenter.clear();
-    supportersRight.clear();*/
 
     //use ROS image_proc or opencv instead of ip mapper?
 
@@ -210,7 +199,6 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
     cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::MONO8);
     
     cv::Mat image = cv_ptr->image.clone();
-
     Mat cut_image = image(cv::Rect(0,cam_h * 0.25f,cam_w,cam_h * 0.75f));
 
     #ifdef PAINT_OUTPUT_CUT_IMAGE
@@ -218,16 +206,7 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
         cv::waitKey(1);
     #endif
 
-    gettimeofday(&tp, NULL);
-    long int ms1 = tp.tv_sec * 1000 + tp.tv_usec / 1000;
-
-    //Mat cut_image = image(cv::Rect(0,cam_h/2,cam_w,cam_h/2));
     Mat remapped_image = ipMapper.remap(cut_image);
-
-    gettimeofday(&tp, NULL);
-    long int ms2 = tp.tv_sec * 1000 + tp.tv_usec / 1000;
-
-    ROS_ERROR("remap time: %d", (ms2 - ms1));
 
     #ifdef PAINT_OUTPUT_IP_MAPPED_IMAGE
         cv::imshow("IPmapped image", remapped_image);
@@ -236,14 +215,8 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
 
     cv::Mat transformedImage = remapped_image(cv::Rect((cam_w/2)-proj_image_w_half+proj_image_horizontal_offset,
             proj_y_start,proj_image_w,proj_image_h)).clone();
-//    cv::Mat transformedImage = remapped_image(cv::Rect((cam_w/2)-proj_image_w_half+proj_image_horizontal_offset,
-//            proj_y_start,proj_image_w,proj_image_h)).clone();
 
     cv::flip(transformedImage, transformedImage, 0);
-
-    //cv::imshow("Cut IPmapped image", transformedImage);   
-    //cv::waitKey(1);
-    
 
     //scanlines -> edges (in each scanline we find maximum and minimum of kernel fn ~= where the edge is)
     //this is where we use input image!
@@ -401,7 +374,6 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
     #endif
     //---------------------- END DEBUG OUTPUT RANSAC POLYNOMIALS ------------------------------//
 
-    //detectLane();
     pubAngle();
 
     cv::Mat transformedImagePaintableLaneModel = transformedImage.clone();
@@ -484,11 +456,6 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr& msg)
     //---------------------- END DEBUG OUTPUT LANE POLYNOMIAL ------------------------------//
 
     frame++;
-
-    gettimeofday(&tp, NULL);
-    long int end = tp.tv_sec * 1000 + tp.tv_usec / 1000;
-
-    ROS_ERROR("Frame time: %d", (end -start));
 }
 
 void cLaneDetectionFu::debugPaintPolynom(cv::Mat &m, cv::Scalar color, NewtonPolynomial &p, int start, int end) {
@@ -847,8 +814,6 @@ defaultLineCalculation:
         laneWidth = defaultXRight - defaultXCenter;
         defaultXLeft = defaultXCenter - (int) laneWidth;
     }
-
-    //ROS_ERROR("left: %d, center: %d, right: %d", defaultXLeft, defaultXCenter, defaultXRight);
 }
 
 /**
@@ -861,53 +826,7 @@ defaultLineCalculation:
  *
  * @param laneMarkings  a vector containing all detected lane markings
  */
-/*void cLaneDetectionFu::buildLaneMarkingsLists(
-        const std::vector<FuPoint<int>> &laneMarkings) {
-    laneMarkingsLeft.clear();
-    laneMarkingsCenter.clear();
-    laneMarkingsRight.clear();
-
-    for (FuPoint<int> laneMarking : laneMarkings) {
-        if (polyDetectedLeft) {
-            if (isInPolyRoi(polyLeft, laneMarking)) {
-                laneMarkingsLeft.push_back(laneMarking);
-                continue;
-            }
-        }
-
-        if (polyDetectedCenter) {
-            if (isInPolyRoi(polyCenter, laneMarking)) {
-                laneMarkingsCenter.push_back(laneMarking);
-                continue;
-            }
-        }
-
-        if (polyDetectedRight) {
-            if (isInPolyRoi(polyRight, laneMarking)) {
-                laneMarkingsRight.push_back(laneMarking);
-                continue;
-            }
-        }
-
-        if (isInDefaultRoi(LEFT, laneMarking)) {
-            laneMarkingsLeft.push_back(laneMarking);
-            continue;
-        }
-
-        if (isInDefaultRoi(CENTER, laneMarking)) {
-            laneMarkingsCenter.push_back(laneMarking);
-            continue;
-        }
-
-        if (isInDefaultRoi(RIGHT, laneMarking)) {
-            laneMarkingsRight.push_back(laneMarking);
-            continue;
-        }
-    }
-}*/
-
-void cLaneDetectionFu::buildLaneMarkingsLists(
-        const std::vector<FuPoint<int>> &laneMarkings) {
+void cLaneDetectionFu::buildLaneMarkingsLists( const std::vector<FuPoint<int>> &laneMarkings) {
     laneMarkingsLeft.clear();
     laneMarkingsCenter.clear();
     laneMarkingsRight.clear();
@@ -1022,8 +941,17 @@ void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, F
  * @param y
  * @param x
  */
-void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, int x, int y)
-{
+void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, int x, int y) {
+    /*
+     * Depending on the sign of the gradient of the poly at the different
+     * x-values and depending on which position we are, we have to add or
+     * subtract the expected distance to the respective lane polynomial, to get
+     * the wanted points.
+     *
+     * The calculation is done for the x- and y-components of the points
+     * separately using the trigonometric ratios of right triangles and the fact
+     * that arctan of some gradient equals its angle to the x-axis in degree.
+     */
     if (m >= 0) {
         p.setX(x - offset * sin(atan(-1 / m)));
         p.setY(y - offset * cos(atan(-1 / m)));
@@ -1033,8 +961,7 @@ void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, i
     p.setY(y + offset * cos(atan(-1 / m)));
 }
 
-void cLaneDetectionFu::generateMovedPolynomials()
-{
+void cLaneDetectionFu::generateMovedPolynomials() {
     movedPolyLeft.clear();
     movedPolyCenter.clear();
     movedPolyRight.clear();
@@ -1044,8 +971,10 @@ void cLaneDetectionFu::generateMovedPolynomials()
     isPolyMovedCenter = false;
     isPolyMovedRight = false;
 
-    if (!polyDetectedLeft && !polyDetectedCenter && !polyDetectedRight) return;
-    if (polyDetectedLeft && polyDetectedCenter && polyDetectedRight) return;
+    if ((!polyDetectedLeft && !polyDetectedCenter && !polyDetectedRight)
+        || (polyDetectedLeft && polyDetectedCenter && polyDetectedRight)) {
+        return;
+    }
 
     FuPoint<double> pointLeft1 = FuPoint<double>();
     FuPoint<double> pointLeft2 = FuPoint<double>();
@@ -1232,12 +1161,9 @@ int cLaneDetectionFu::horizDistanceToPolynomial(NewtonPolynomial& poly, FuPoint<
 bool cLaneDetectionFu::isInDefaultRoi(ePosition position, FuPoint<int> &p) {
     if (p.getY() < minYDefaultRoi || p.getY() > maxYRoi) {
         return false;
-    }
-    else if (horizDistanceToDefaultLine(position, p)
-            <= interestDistanceDefault) {
+    } else if (horizDistanceToDefaultLine(position, p) <= interestDistanceDefault) {
         return true;
-    }
-    else {
+    } else {
         return false;
     }
 }
@@ -1252,11 +1178,9 @@ bool cLaneDetectionFu::isInDefaultRoi(ePosition position, FuPoint<int> &p) {
 bool cLaneDetectionFu::isInPolyRoi(NewtonPolynomial &poly, FuPoint<int> &p) {
     if (p.getY() < minYPolyRoi || p.getY() > maxYRoi) {
         return false;
-    }
-    else if (horizDistanceToPolynomial(poly, p) <= interestDistancePoly) {
+    } else if (horizDistanceToPolynomial(poly, p) <= interestDistancePoly) {
         return true;
-    }
-    else {
+    } else {
         return false;
     }
 }
@@ -1290,19 +1214,10 @@ int cLaneDetectionFu::horizDistance(FuPoint<int> &p1, FuPoint<int> &p2) {
  * @param coeffs    The coefficients under usage of the newton basis
  * @return          The gradient of the polynomial at x
  */
-double cLaneDetectionFu::gradient(double x, vector<FuPoint<int>> &points,
-        vector<double> coeffs) {
+double cLaneDetectionFu::gradient(double x, vector<FuPoint<int>> &points, vector<double> coeffs) {
     return (2 * coeffs[2] * x + coeffs[1])
             - (coeffs[2] * points[1].getY())
             - (coeffs[2] * points[0].getY());
-}
-
-double cLaneDetectionFu::gradient(double x, NewtonPolynomial polynomial) {
-    vector<double> coeffs = polynomial.getCoefficients();
-
-
-    return 2 * coeffs[2] * x + coeffs[1] - coeffs[2] * polynomial.at(10);
-           - coeffs[2] * polynomial.at(50);
 }
 
 /**
@@ -1423,393 +1338,6 @@ ePosition cLaneDetectionFu::maxProportion() {
 }
 
 /**
- * Create the lane polynomial starting from the detected polynomial of the
- * given position. A lane polynomial is formed by shifting points with
- * different x-values of the used polynomial along the normals of the polynomial
- * at this points to the distance, where the respective lane polynomial is
- * expected to lie.
- *
- * @param position  The position of the detected polynomial used as reference
- */
-void cLaneDetectionFu::createLanePoly(ePosition position) {
-    lanePoly.clear();
-
-    //double laneWidth = (defaultXRight - defaultXCenter) / 2; //45.f;
-    double x1 = minYPolyRoi + 5;
-    double x2 = minYPolyRoi + ((proj_image_h-minYPolyRoi) / 2);
-    double x3 = proj_image_h - 5;
-
-    FuPoint<double> point1 = FuPoint<double>();
-    FuPoint<double> point2 = FuPoint<double>();
-    FuPoint<double> point3 = FuPoint<double>();
-
-    NewtonPolynomial usedPoly;
-
-    double m1 = 0;
-    double m2 = 0;
-    double m3 = 0;
-
-    if (position == LEFT) {
-        usedPoly = polyLeft;
-        m1 = gradient(x1, pointsLeft, usedPoly.getCoefficients());
-        m2 = gradient(x2, pointsLeft, usedPoly.getCoefficients());
-        m3 = gradient(x3, pointsLeft, usedPoly.getCoefficients());
-
-        shiftPoint(point1,m1, defaultXLeft, x1, usedPoly.at(x1));
-        shiftPoint(point2,m2, defaultXLeft, x2, usedPoly.at(x2));
-        shiftPoint(point3,m3, defaultXLeft, x3, usedPoly.at(x3));
-    }
-    else if (position == CENTER) {
-        usedPoly = polyCenter;
-        m1 = gradient(x1, pointsCenter, usedPoly.getCoefficients());
-        m2 = gradient(x2, pointsCenter, usedPoly.getCoefficients());
-        m3 = gradient(x3, pointsCenter, usedPoly.getCoefficients());
-
-        shiftPoint(point1,m1, defaultXCenter, x1, usedPoly.at(x1));
-        shiftPoint(point2,m2, defaultXCenter, x2, usedPoly.at(x2));
-        shiftPoint(point3,m3, defaultXCenter, x3, usedPoly.at(x3));
-    }
-    else if (position == RIGHT) {
-        usedPoly = polyRight;
-        m1 = gradient(x1, pointsRight, usedPoly.getCoefficients());
-        m2 = gradient(x2, pointsRight, usedPoly.getCoefficients());
-        m3 = gradient(x3, pointsRight, usedPoly.getCoefficients());
-
-        shiftPoint(point1,m1, defaultXRight, x1, usedPoly.at(x1));
-        shiftPoint(point2,m2, defaultXRight, x2, usedPoly.at(x2));
-        shiftPoint(point3,m3, defaultXRight, x3, usedPoly.at(x3));
-    }
-
-    // create the lane polynomial out of the shifted points
-    lanePoly.addDataXY(point1);
-    lanePoly.addDataXY(point2);
-    lanePoly.addDataXY(point3);
-
-    lanePolynomial.setLanePoly(lanePoly);
-    lanePolynomial.setDetected();
-    lanePolynomial.setLastUsedPosition(position);
-/*
-    lanePoly.clear();
-
-    double coef = 1.2;
-
-    double x1 = minYPolyRoi+5;
-    double x2 = minYPolyRoi + ((proj_image_h-minYPolyRoi)/2);
-    double x3 = proj_image_h-5;
-
-    FuPoint<double> pointRight1;
-    FuPoint<double> pointRight2;
-    FuPoint<double> pointRight3;
-
-    double dRight = 0;
-
-    NewtonPolynomial usedPoly;
-
-    double y1;
-    double y2;
-    double y3;
-
-    if (position == LEFT) {
-        usedPoly = polyLeft;
-        dRight = 10;
-    }
-    else if (position == CENTER) {
-        usedPoly = polyCenter;
-        dRight = defaultXCenter-5;
-    }
-    else if (position == RIGHT) {
-        usedPoly = polyRight;
-        dRight = defaultXRight+5;
-    }
-
-
-    pointRight1 = FuPoint<double>(x1, usedPoly.at(x1) - dRight);
-    pointRight2 = FuPoint<double>(x2, usedPoly.at(x2) - dRight);
-    pointRight3 = FuPoint<double>(x3, usedPoly.at(x3) - dRight);
-
-    // create the lane polynomial out of the shifted points
-    lanePoly.addDataXY(pointRight1);
-    lanePoly.addDataXY(pointRight2);
-    lanePoly.addDataXY(pointRight3);
-
-    lanePolynomial.setLanePoly(lanePoly);
-    lanePolynomial.setDetected();
-    lanePolynomial.setLastUsedPosition(position);
-*/
-}
-
-//original method, should be better, but doesn't work correctly in our case when RIGHT polynomial is used
-/*void LaneDetector::createLanePoly(ePosition position) {
-    lanePoly.clear();
-
-    double x1 = 0.05;
-    double x2 = 0.4;
-    double x3 = 1.0;
-
-    FuPoint<double> pointRight1;
-    FuPoint<double> pointRight2;
-    FuPoint<double> pointRight3;
-
-    double m1 = 0;
-    double m2 = 0;
-    double m3 = 0;
-
-    double dRight = 0;
-
-    NewtonPolynomial usedPoly;
-
-    /*
-     * Depending on the sign of the gradient of the poly at the different
-     * x-values and depending on which position we are, we have to add or
-     * subtract the expected distance to the respective lane polynomial, to get
-     * the wanted points.
-     *
-     * The calculation is done for the x- and y-components of the points
-     * separately using the trigonometric ratios of right triangles and the fact
-     * that arctan of some gradient equals its angle to the x-axis in degree.
-     */
-    /*if (position == LEFT) {
-        usedPoly = polyLeft;
-        m1 = gradient(x1, pointsLeft, usedPoly.getCoefficients());
-        m2 = gradient(x2, pointsLeft, usedPoly.getCoefficients());
-        m3 = gradient(x3, pointsLeft, usedPoly.getCoefficients());
-
-        dRight = defaultXLeft;
-
-        if (m1 > 0) {
-            pointRight1 = FuPoint<double>(x1 + dRight * cos(atan(-1 / m1)),
-                    usedPoly.at(x1) + dRight * sin(atan(-1 / m1)));
-        }
-        else {
-            pointRight1 = FuPoint<double>(x1 - dRight * cos(atan(-1 / m1)),
-                    usedPoly.at(x1) - dRight * sin(atan(-1 / m1)));
-        }
-
-        if (m2 > 0) {
-            pointRight2 = FuPoint<double>(x2 + dRight * cos(atan(-1 / m2)),
-                    usedPoly.at(x2) + dRight * sin(atan(-1 / m2)));
-        }
-        else {
-            pointRight2 = FuPoint<double>(x2 - dRight * cos(atan(-1 / m2)),
-                    usedPoly.at(x2) - dRight * sin(atan(-1 / m2)));
-        }
-
-        if (m3 > 0) {
-            pointRight3 = FuPoint<double>(x3 + dRight * cos(atan(-1 / m3)),
-                    usedPoly.at(x3) + dRight * sin(atan(-1 / m3)));
-        }
-        else {
-            pointRight3 = FuPoint<double>(x3 - dRight * cos(atan(-1 / m3)),
-                    usedPoly.at(x3) - dRight * sin(atan(-1 / m3)));
-        }
-    }
-    else if (position == CENTER) {
-        usedPoly = polyCenter;
-        m1 = gradient(x1, pointsCenter, usedPoly.getCoefficients());
-        m2 = gradient(x2, pointsCenter, usedPoly.getCoefficients());
-        m3 = gradient(x3, pointsCenter, usedPoly.getCoefficients());
-
-        dRight = defaultXCenter;
-
-        if (m1 > 0) {
-            pointRight1 = FuPoint<double>(x1 + dRight * cos(atan(-1 / m1)),
-                    usedPoly.at(x1) + dRight * sin(atan(-1 / m1)));
-        }
-        else {
-            pointRight1 = FuPoint<double>(x1 - dRight * cos(atan(-1 / m1)),
-                    usedPoly.at(x1) - dRight * sin(atan(-1 / m1)));
-        }
-
-        if (m2 > 0) {
-            pointRight2 = FuPoint<double>(x2 + dRight * cos(atan(-1 / m2)),
-                    usedPoly.at(x2) + dRight * sin(atan(-1 / m2)));
-        }
-        else {
-            pointRight2 = FuPoint<double>(x2 - dRight * cos(atan(-1 / m2)),
-                    usedPoly.at(x2) - dRight * sin(atan(-1 / m2)));
-        }
-
-        if (m3 > 0) {
-            pointRight3 = FuPoint<double>(x3 + dRight * cos(atan(-1 / m3)),
-                    usedPoly.at(x3) + dRight * sin(atan(-1 / m3)));
-        }
-        else {
-            pointRight3 = FuPoint<double>(x3 - dRight * cos(atan(-1 / m3)),
-                    usedPoly.at(x3) - dRight * sin(atan(-1 / m3)));
-        }
-    }
-    else if (position == RIGHT) {
-        usedPoly = polyRight;
-        m1 = gradient(x1, pointsRight, usedPoly.getCoefficients());
-        m2 = gradient(x2, pointsRight, usedPoly.getCoefficients());
-        m3 = gradient(x3, pointsRight, usedPoly.getCoefficients());
-
-        dRight = defaultXCenter;
-
-        if (m1 > 0) {
-            pointRight1 = FuPoint<double>(x1 - dRight * cos(atan(-1 / m1)),
-                    usedPoly.at(x1) - dRight * sin(atan(-1 / m1)));
-        }
-        else {
-            pointRight1 = FuPoint<double>(x1 + dRight * cos(atan(-1 / m1)),
-                    usedPoly.at(x1) + dRight * sin(atan(-1 / m1)));
-        }
-
-        if (m2 > 0) {
-            pointRight2 = FuPoint<double>(x2 - dRight * cos(atan(-1 / m2)),
-                    usedPoly.at(x2) - dRight * sin(atan(-1 / m2)));
-        }
-        else {
-            pointRight2 = FuPoint<double>(x2 + dRight * cos(atan(-1 / m2)),
-                    usedPoly.at(x2) + dRight * sin(atan(-1 / m2)));
-        }
-
-        if (m3 > 0) {
-            pointRight3 = FuPoint<double>(x3 - dRight * cos(atan(-1 / m3)),
-                    usedPoly.at(x3) - dRight * sin(atan(-1 / m3)));
-        }
-        else {
-            pointRight3 = FuPoint<double>(x3 + dRight * cos(atan(-1 / m3)),
-                    usedPoly.at(x3) + dRight * sin(atan(-1 / m3)));
-        }
-    }
-
-    // create the lane polynomial out of the shifted points
-    lanePoly.addDataXY(pointRight1);
-    lanePoly.addDataXY(pointRight2);
-    lanePoly.addDataXY(pointRight3);
-
-    lanePolynomial.setLanePoly(lanePoly);
-    lanePolynomial.setDetected();
-    lanePolynomial.setLastUsedPosition(position);
-}*/
-
-/**
- * Decide, which of the detected polynomials (if there are any) should be used
- * as reference for creating the lane polynomials.
- *
- * @param startX    The x-value, starting from which we compare the detected polys
- */
-void cLaneDetectionFu::detectLane() {
-    int startX = detectLaneStartX;
-
-    if (polyDetectedLeft && !polyDetectedCenter && !polyDetectedRight) {
-        createLanePoly(LEFT);
-    }
-    else if (!polyDetectedLeft && polyDetectedCenter && !polyDetectedRight) {
-        createLanePoly(CENTER);
-    }
-    else if (!polyDetectedLeft && !polyDetectedCenter && polyDetectedRight) {
-        createLanePoly(RIGHT);
-    }
-    else if (polyDetectedLeft && polyDetectedCenter && !polyDetectedRight) {
-        double gradLeft = gradient(startX, pointsLeft,
-                polyLeft.getCoefficients());
-
-        double gradCenter = nextGradient(startX, polyLeft, pointsLeft,
-                pointsCenter, polyLeft.getCoefficients(),
-                polyCenter.getCoefficients(), gradLeft);
-
-        if (gradientsSimilar(gradLeft, gradCenter)) {
-            createLanePoly(CENTER);
-        }
-        else {
-            if (bestPolyLeft.second >= bestPolyCenter.second) {
-                createLanePoly(LEFT);
-            }
-            else {
-                createLanePoly(CENTER);
-            }
-        }
-    }
-    else if (!polyDetectedLeft && polyDetectedCenter && polyDetectedRight) {
-        double gradCenter = gradient(startX, pointsCenter,
-                polyCenter.getCoefficients());
-
-        double gradRight = nextGradient(startX, polyCenter, pointsCenter,
-                pointsRight, polyCenter.getCoefficients(),
-                polyRight.getCoefficients(), gradCenter);
-
-        if (gradientsSimilar(gradCenter, gradRight)) {
-            createLanePoly(RIGHT);
-        }
-        else {
-            if (bestPolyCenter.second >= bestPolyRight.second) {
-                createLanePoly(CENTER);
-            }
-            else {
-                createLanePoly(RIGHT);
-            }
-        }
-    }
-    else if (polyDetectedLeft && !polyDetectedCenter && polyDetectedRight) {
-        double gradLeft = gradient(startX, pointsLeft,
-                polyLeft.getCoefficients());
-
-        double gradRight = nextGradient(startX, polyLeft, pointsLeft,
-                pointsRight, polyLeft.getCoefficients(),
-                polyRight.getCoefficients(), gradLeft);
-
-        if (gradientsSimilar(gradLeft, gradRight)) {
-            createLanePoly(RIGHT);
-        }
-        else {
-            if (bestPolyLeft.second >= bestPolyRight.second) {
-                createLanePoly(LEFT);
-            }
-            else {
-                createLanePoly(RIGHT);
-            }
-        }
-    }
-    else if (polyDetectedLeft && polyDetectedCenter && polyDetectedRight) {
-        double gradRight = gradient(startX, pointsRight,
-                polyRight.getCoefficients());
-
-        double gradCenter2 = gradient(startX, pointsCenter,
-                polyCenter.getCoefficients());
-
-        double gradCenter1 = nextGradient(startX, polyRight, pointsRight,
-                pointsCenter, polyRight.getCoefficients(),
-                polyCenter.getCoefficients(), gradRight);
-
-        //double gradLeft1 = nextGradient(startX, polyRight, pointsRight,
-        //        pointsLeft, polyRight.getCoefficients(),
-        //        polyLeft.getCoefficients(), gradRight);
-
-        double gradLeft2 = nextGradient(startX, polyCenter, pointsCenter,
-                pointsLeft, polyCenter.getCoefficients(),
-                polyLeft.getCoefficients(), gradCenter2);
-
-        if (gradientsSimilar(gradRight, gradCenter1)) {
-            // ?!
-            //if (gradientsSimilar(gradCenter1, gradLeft1)) {
-                createLanePoly(RIGHT);
-            //}
-            //else {
-            //    createLanePoly(RIGHT);
-            //}
-        }
-        else {
-            if (gradientsSimilar(gradCenter2, gradLeft2)) {
-                createLanePoly(CENTER);
-            }
-            else {
-                //ROS_ERROR("Creating lane according to max proportion.");
-                ePosition maxPos = maxProportion();
-                
-                createLanePoly(maxPos);         
-            }
-        }
-    }
-    else if (!polyDetectedLeft && !polyDetectedCenter && !polyDetectedRight) {
-        lanePoly.clear();
-
-        lanePolynomial.setNotDetected();
-    }
-}
-
-/**
  * Starts the RANSAC algorithm for detecting each of the three lane marking
  * polynomials.
  */
@@ -1853,17 +1381,6 @@ bool cLaneDetectionFu::ransacInternal(ePosition position,
         poly.clear();
         return false;
     }
-
-    //ROS_ERROR("length: %d", sortedMarkings.size());
-
-    /*
-     * threshold value for minimal distance between lowest and highest point
-     * to prevent the left and center markings being chosen over the right markings
-     */
-    /*if (sortedMarkings.at(sortedMarkings.size() - 1).getY() - sortedMarkings.at(0).getY() < 30) {
-        ROS_ERROR("Minimal distance");
-        return false;
-    }*/
 
     std::vector<FuPoint<int>> tmpSupporters = std::vector<FuPoint<int>>();
 
@@ -2014,8 +1531,7 @@ bool cLaneDetectionFu::ransacInternal(ePosition position,
  * @param prevPoly  The previous polynomial detected at this position
  * @return          True, if the polynomial counts as valid
  */
-bool cLaneDetectionFu::polyValid(ePosition position, NewtonPolynomial poly,
-        NewtonPolynomial prevPoly) {
+bool cLaneDetectionFu::polyValid(ePosition position, NewtonPolynomial poly, NewtonPolynomial prevPoly) {
 
     if (prevPoly.getDegree() != -1) {
         return isSimilar(poly, prevPoly);
@@ -2045,64 +1561,35 @@ bool cLaneDetectionFu::polyValid(ePosition position, NewtonPolynomial poly,
         }
     }
 
-    /*FuPoint<int> p1 = FuPoint<int>(poly.at(polyY1), polyY1);    //y = 75
-
-    if (horizDistanceToDefaultLine(position, p1) > 10) {
-        //ROS_INFO("Poly was to far away from default line at y = 25");
-        return false;
-    }
-
-    FuPoint<int> p2 = FuPoint<int>(poly.at(polyY2), polyY2);    //y = 60
-
-    if (horizDistanceToDefaultLine(position, p2) > 20) {
-        //ROS_INFO("Poly was to far away from default line at y = 25");
-        return false;
-    }
-
-    FuPoint<int> p3 = FuPoint<int>(poly.at(polyY3), polyY3);    //y = 40
-
-    if (horizDistanceToDefaultLine(position, p3) > 40) {
-        //ROS_INFO("Poly was to far away from default line at y = 30");
-        return false;
-    }*/
-
-    //ROS_INFO("Poly is valid");
-
     return true;
 }
 
 bool cLaneDetectionFu::isSimilar(const NewtonPolynomial &poly1, const NewtonPolynomial &poly2) {
-    //ROS_ERROR("y1: %d, y2: %d, y3: %d", polyY1, polyY2, polyY3);
-
     FuPoint<int> p1 = FuPoint<int>(poly1.at(polyY1), polyY1);
     FuPoint<int> p2 = FuPoint<int>(poly2.at(polyY1), polyY1);
 
-    if (horizDistance(p1, p2) > interestDistancePoly) {//0.05 * meters) {
-        //ROS_INFO("Poly was to far away from previous poly at y = 25");
+    if (horizDistance(p1, p2) > interestDistancePoly) { //0.05 * meters
         return false;
     }
 
     FuPoint<int> p3 = FuPoint<int>(poly1.at(polyY2), polyY2);
     FuPoint<int> p4 = FuPoint<int>(poly2.at(polyY2), polyY2);
 
-    if (horizDistance(p3, p4) > interestDistancePoly) {//0.05 * meters) {
-        //ROS_INFO("Poly was to far away from previous poly at y = 30");
+    if (horizDistance(p3, p4) > interestDistancePoly) { //0.05 * meters
         return false;
     }
 
     FuPoint<int> p5 = FuPoint<int>(poly1.at(polyY3), polyY3);
     FuPoint<int> p6 = FuPoint<int>(poly2.at(polyY3), polyY3);
 
-    if (horizDistance(p5, p6) > interestDistancePoly) {//0.05 * meters) {
-        //ROS_INFO("Poly was to far away from previous poly at y = 30");
+    if (horizDistance(p5, p6) > interestDistancePoly) { //0.05 * meters
         return false;
     }
 
     return true;
 }
 
-void cLaneDetectionFu::pubRGBImageMsg(cv::Mat& rgb_mat, image_transport::CameraPublisher publisher)
-{
+void cLaneDetectionFu::pubRGBImageMsg(cv::Mat& rgb_mat, image_transport::CameraPublisher publisher) {
     sensor_msgs::ImagePtr rgb_img(new sensor_msgs::Image);
 
     rgb_img->header.seq = head_sequence_id;
@@ -2160,12 +1647,12 @@ void cLaneDetectionFu::pubAngle() {
     /*
      * filter too rash steering angles / jitter in polynomial data
      */
-    /*if (std::abs(result - lastAngle) > maxAngleDiff) {
+    if (std::abs(result - lastAngle) > maxAngleDiff) {
         if (result - lastAngle > 0)
             result = lastAngle + maxAngleDiff;
         else
             result = lastAngle - maxAngleDiff;
-    }*/
+    }
 
     lastAngle = result;
 
@@ -2176,8 +1663,7 @@ void cLaneDetectionFu::pubAngle() {
     publish_angle.publish(angleMsg);
 }
 
-void cLaneDetectionFu::pubGradientAngle()
-{
+void cLaneDetectionFu::pubGradientAngle() {
     int position = proj_image_h - angleAdjacentLeg;
 
     double val1 = lanePolynomial.getLanePoly().at(position);
@@ -2222,8 +1708,7 @@ void cLaneDetectionFu::config_callback(line_detection_fu::LaneDetectionConfig &c
     scanlines = getScanlines();
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     ros::init(argc, argv, "cLaneDetectionFu");
     ros::NodeHandle nh;
     
@@ -2234,8 +1719,7 @@ int main(int argc, char **argv)
     f = boost::bind(&cLaneDetectionFu::config_callback, &node, _1, _2);
     server.setCallback(f);
 
-    while(ros::ok())
-    {
+    while(ros::ok()) {
         ros::spinOnce();
     }
     return 0;
