@@ -131,31 +131,34 @@ cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh) : nh_(nh), priv_nh_("~") 
 
     lastAngle = 0;
 
+    head_time_stamp = ros::Time::now();
+
     read_images_ = nh.subscribe(nh_.resolveName(camera_name), MY_ROS_QUEUE_SIZE, &cLaneDetectionFu::ProcessInput, this);
 
+    //publish_curvature = nh.advertise<std_msgs::Float32>("/lane_model/curvature", MY_ROS_QUEUE_SIZE);
     publish_angle = nh.advertise<std_msgs::Float32>("/lane_model/angle", MY_ROS_QUEUE_SIZE);
+
+    image_transport::ImageTransport image_transport(nh);
+
+    image_publisher = image_transport.advertiseCamera("/lane_model/lane_model_image", MY_ROS_QUEUE_SIZE);
+
+    if (PUBLISH_IMAGES) {
+        image_publisher_ransac = image_transport.advertiseCamera("/lane_model/ransac", MY_ROS_QUEUE_SIZE);
+        image_publisher_lane_markings = image_transport.advertiseCamera("/lane_model/lane_markings", MY_ROS_QUEUE_SIZE);
+    }
+
+
+    if (!rgb_camera_info) {
+        rgb_camera_info.reset(new sensor_msgs::CameraInfo());
+        rgb_camera_info->width = projImageW;
+        rgb_camera_info->height = projImageH + 50;
+    }
 
     //from camera properties and ROI etc we get scanlines (=line segments, úsečky)
     //these line segments are lines in image on whose we look for edges
     //the outer vector represents rows on image, inner vector is vector of line segments of one row, usualy just one line segment
     //we should generate this only once in the beginning! or even just have it pregenerated for our cam
     scanlines = getScanlines();
-
-    head_time_stamp = ros::Time::now();
-
-    if (PUBLISH_IMAGES) {
-        image_transport::ImageTransport image_transport(nh);
-
-        image_publisher = image_transport.advertiseCamera("/lane_model/lane_model_image", MY_ROS_QUEUE_SIZE);
-        image_publisher_ransac = image_transport.advertiseCamera("/lane_model/ransac", MY_ROS_QUEUE_SIZE);
-        image_publisher_lane_markings = image_transport.advertiseCamera("/lane_model/lane_markings", MY_ROS_QUEUE_SIZE);
-
-        if (!rgb_camera_info) {
-            rgb_camera_info.reset(new sensor_msgs::CameraInfo());
-            rgb_camera_info->width = projImageW;
-            rgb_camera_info->height = projImageH + 50;
-        }
-    }
 
     if (SAVE_FRAME_IMAGES) {
         mkdir("groupedLaneMarkings", S_IRWXU);
