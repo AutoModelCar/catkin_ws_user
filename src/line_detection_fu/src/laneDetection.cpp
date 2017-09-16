@@ -453,14 +453,16 @@ std::vector<FuPoint<int>> cLaneDetectionFu::extractLaneMarkings(const std::vecto
 }
 
 /**
- * Calculates x positions of the lanes. Lane markings of first 10 rows from the bottom
+ * Calculates x positions of the lanes. Lane markings of the first 10 rows from the bottom
  * of the image are used. Car must start between right and center lane because all lane
  * marking points in left half of the image are considered as possible lane edge points
- * of center lane (analog: right half of image for right lane). Lane marking points in
- * range of other lane marking points are supporters because they form a line. The x-value
- * of found lane points with maximum supporters will be used. This ensures that non-lane
- * points are ignored. Start position of left lane is calculated after start positions
- * of center and right lanes are found.
+ * of center lane (analog: right half of image for right lane).
+ *
+ * Lane marking points in range of other lane marking points are supporters because they form a line.
+ * The x-value of found lane points with maximum supporters will be used. This ensures that non-lane
+ * points are ignored.
+ *
+ *Start position of left lane is calculated after start positions of center and right lanes are found.
  */
 void cLaneDetectionFu::findLanePositions(vector<FuPoint<int>> &laneMarkings) {
     // defaultXLeft is calculated after center and right lane position is found
@@ -848,6 +850,10 @@ bool cLaneDetectionFu::ransacInternal(ePosition position,
     return true;
 }
 
+/**
+ * Shifts detected lane polynomials to the position of the undected lane polyominals,
+ * so they can be used in the next cycle to group the lane markings
+ */
 void cLaneDetectionFu::generateMovedPolynomials() {
     movedPolyLeft.clear();
     movedPolyCenter.clear();
@@ -1033,19 +1039,23 @@ void cLaneDetectionFu::pubAngle() {
 
 
 
-void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, FuPoint<int> &origin) {
+void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, FuPoint<int> &origin)
+{
     shiftPoint(p, m, offset, origin.getX(), origin.getY());
 }
 
 /**
+ * Shifts a point by a given offset along the given gradient.
+ * The sign of the offset dictates the direction of the shift relative to the offset
  *
- * @param p
- * @param m
+ * @param p the shifted point
+ * @param m the gradient of the polynomial at x
  * @param offset Positive if shifting to the left, negative to the right
- * @param y
- * @param x
+ * @param x the x coordinate of the original point
+ * @param y the y coordinate of the original point
  */
-void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, int x, int y) {
+void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, int x, int y)
+{
     /*
      * Depending on the sign of the gradient of the poly at the different
      * x-values and depending on which position we are, we have to add or
@@ -1264,7 +1274,6 @@ bool cLaneDetectionFu::isSimilar(const NewtonPolynomial &poly1, const NewtonPoly
 /*
  *      debug functions
  */
-
 
 
 void cLaneDetectionFu::drawEdgeWindow(Mat &img, vector<vector<EdgePoint>> edges) {
@@ -1689,7 +1698,7 @@ double cLaneDetectionFu::nextGradient(double x, NewtonPolynomial &poly1,
  *
  * @param m1    The first gradient
  * @param m2    The second gradient
- * @return      True, if the diffenence between the gradients is less than 10°
+ * @return      True, if the diffenence between the gradients is less than 10 degrees
  */
 bool cLaneDetectionFu::gradientsSimilar(double &m1, double &m2) {
     double a1 = atan(m1) * 180 / PI;
