@@ -30,11 +30,13 @@ THIS SOFTWARE IS PROVIDED BY AUDI AG AND CONTRIBUTORS �AS IS� AND ANY EXPRES
 
 #ifndef _LaneDetection_FILTER_HEADER_
 #define _LaneDetection_FILTER_HEADER_
+
 #include <iostream>
 
 #include <ros/ros.h>
 #include <sensor_msgs/Image.h>
 #include <std_msgs/Float32.h>
+#include <sensor_msgs/image_encodings.h>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -48,6 +50,7 @@ THIS SOFTWARE IS PROVIDED BY AUDI AG AND CONTRIBUTORS �AS IS� AND ANY EXPRES
 #include <opencv2/video/background_segm.hpp>
 
 #include <stdlib.h>
+#include <sys/stat.h>
 
 #include "tools/LineSegment.h"
 #include "tools/Edges.h"
@@ -55,7 +58,6 @@ THIS SOFTWARE IS PROVIDED BY AUDI AG AND CONTRIBUTORS �AS IS� AND ANY EXPRES
 #include "tools/LanePolynomial.h"
 #include "tools/enums.h"
 #include "tools/IPMapper.h"
-#include "tools/DebugUtils.h"
 
 #include <dynamic_reconfigure/server.h>
 #include <line_detection_fu/LaneDetectionConfig.h>
@@ -63,268 +65,281 @@ THIS SOFTWARE IS PROVIDED BY AUDI AG AND CONTRIBUTORS �AS IS� AND ANY EXPRES
 
 using namespace std;
 
-class DebugUtils;
 
 class cLaneDetectionFu {
-    private:
-
-        // the node handle
-        ros::NodeHandle nh_;
-
-        // Node handle in the private namespace
-        ros::NodeHandle priv_nh_;
-
-        // subscribers
-        ros::Subscriber read_images_;
-
-        // publishers
-        //ros::Publisher publish_images;
-        //ros::Publisher publish_curvature;
-        ros::Publisher publish_angle;
-
-        IPMapper ipMapper;
-
-        std::string camera_name;
-        
-        int cam_w;
-        int cam_h;
-        int proj_y_start;
-        int proj_image_h;
-        int proj_image_w;
-        int proj_image_w_half;
-        int proj_image_horizontal_offset;
-        int roi_top_w;
-        int roi_bottom_w;
-
-        int scanlinesVerticalDistance;
-        int scanlinesMaxCount;
-
-        vector<vector<LineSegment<int>> > scanlines;
-
-        int m_gradientThreshold;
-        int m_nonMaxWidth;
-
-        int polyY1;
-        int polyY2;
-        int polyY3;
-        
-
-        /**
-         * The lane marking polynomials detected in the current picture.
-         */
-        NewtonPolynomial polyLeft;
-        NewtonPolynomial polyCenter;
-        NewtonPolynomial polyRight;
-
-        /**
-         * Horizontal relative positions of the default lane marking lines.
-         *
-         * These lines are situated in a position, where the lane markings of a
-         * straight lane would show up in the relative coordinate system with the
-         * car standing in the center of the right lane.
-         */
-        int defaultXLeft = 0;
-        int defaultXCenter = 0;
-        int defaultXRight = 0;
-
-        /**
-         * The maximum distance of a point to a polynomial so that it counts as a
-         * supporter.
-         */
-        int maxDistance;
-
-        /**
-         * The horizontal distance to the last detected polynomial, within lane
-         * markings have to lie to be considered for the detection of the next
-         * polynomial. The width of the polynomial region of interest is two times
-         * this distance.
-         */
-        int interestDistancePoly;
-
-        /**
-         * The horizontal distance to the default line, within lane markings have to
-         * lie to be considered for the detection of a polynomial. The width of the
-         * default region of interest is two times this distance.
-         */
-        int interestDistanceDefault;
-
-        /**
-         * The minimal y of the ROIs. Points with smaller y-Values are not
-         * used in RANSAC.
-         */
-        int maxYRoi;
-
-        /**
-         * The maximal y of default ROIs. Points with bigger y-Values are not used.
-         */
-        int minYDefaultRoi;
-
-        /**
-         * The maximal y of the polynomial ROIs. Points with bigger y-Values are not
-         * used.
-         */
-        int minYPolyRoi;
-
-        /**
-         * The minimal proportion of supporters of all points within a ROI.
-         * Polynomials with lower proportions are discarded.
-         */
-        double proportionThreshould;
-
-        /**
-         * Number of RANSAC iterations
-         */
-        int iterationsRansac;
-
-        /**
-         * flags to determine if a valid polynomial was detected in the last frame
-         * and therefore the polynomial ROI should be used or if no polynomial could
-         * be detected and the default ROI is used.
-         */
-        bool polyDetectedLeft;
-        bool polyDetectedCenter;
-        bool polyDetectedRight;
+private:
+
+    // the node handle
+    ros::NodeHandle nh_;
+
+    // Node handle in the private namespace
+    ros::NodeHandle priv_nh_;
+
+    // subscribers
+    ros::Subscriber read_images_;
+
+    // publishers
+    //ros::Publisher publish_images;
+    //ros::Publisher publish_curvature;
+    ros::Publisher publish_angle;
+
+    IPMapper ipMapper;
+
+    std::string camera_name;
+
+    image_transport::CameraPublisher image_publisher;
+    image_transport::CameraPublisher image_publisher_ransac;
+    image_transport::CameraPublisher image_publisher_lane_markings;
+
+    int cam_w;
+    int cam_h;
+    int projYStart;
+    int projImageH;
+    int projImageW;
+    int proj_image_w_half;
+    int projImageHorizontalOffset;
+    int roiTopW;
+    int roiBottomW;
+
+    int scanlinesVerticalDistance;
+    int scanlinesMaxCount;
+
+    vector<vector<LineSegment<int>>> scanlines;
+
+    int gradientThreshold;
+    int nonMaxWidth;
+
+    int polyY1;
+    int polyY2;
+    int polyY3;
+
+
+    /**
+     * The lane marking polynomials detected in the current picture.
+     */
+    NewtonPolynomial polyLeft;
+    NewtonPolynomial polyCenter;
+    NewtonPolynomial polyRight;
+
+    /**
+     * Horizontal relative positions of the default lane marking lines.
+     *
+     * These lines are situated in a position, where the lane markings of a
+     * straight lane would show up in the relative coordinate system with the
+     * car standing in the center of the right lane.
+     */
+    int defaultXLeft = 0;
+    int defaultXCenter = 0;
+    int defaultXRight = 0;
+
+    /**
+     * The maximum distance of a point to a polynomial so that it counts as a
+     * supporter.
+     */
+    int maxDistance;
+
+    /**
+     * The horizontal distance to the last detected polynomial, within lane
+     * markings have to lie to be considered for the detection of the next
+     * polynomial. The width of the polynomial region of interest is two times
+     * this distance.
+     */
+    int interestDistancePoly;
+
+    /**
+     * The horizontal distance to the default line, within lane markings have to
+     * lie to be considered for the detection of a polynomial. The width of the
+     * default region of interest is two times this distance.
+     */
+    int interestDistanceDefault;
+
+    /**
+     * The minimal y of the ROIs. Points with smaller y-Values are not
+     * used in RANSAC.
+     */
+    int maxYRoi;
+
+    /**
+     * The maximal y of default ROIs. Points with bigger y-Values are not used.
+     */
+    int minYDefaultRoi;
+
+    /**
+     * The maximal y of the polynomial ROIs. Points with bigger y-Values are not
+     * used.
+     */
+    int minYPolyRoi;
+
+    /**
+     * The minimal proportion of supporters of all points within a ROI.
+     * Polynomials with lower proportions are discarded.
+     */
+    double proportionThreshould;
 
-        /**
-         * pairs for saving the best lane polynomials produced during RANSAC
-         *
-         * first : current best NewtonPolynomial
-         * second: proportion of supporters of used lane marking points (quality)
-         */
-        std::pair<NewtonPolynomial, double> bestPolyLeft;
-        std::pair<NewtonPolynomial, double> bestPolyCenter;
-        std::pair<NewtonPolynomial, double> bestPolyRight;
+    /**
+     * Number of RANSAC iterations
+     */
+    int iterationsRansac;
 
+    /**
+     * flags to determine if a valid polynomial was detected in the last frame
+     * and therefore the polynomial ROI should be used or if no polynomial could
+     * be detected and the default ROI is used.
+     */
+    bool polyDetectedLeft;
+    bool polyDetectedCenter;
+    bool polyDetectedRight;
 
-        /**
-         * Lists containing the lane marking points selected for detecting the lane
-         * polynomials during RANSAC
-         */
-        std::vector<FuPoint<int>> laneMarkingsLeft;
-        std::vector<FuPoint<int>> laneMarkingsCenter;
-        std::vector<FuPoint<int>> laneMarkingsRight;
-        std::vector<FuPoint<int>> laneMarkingsNotUsed;
+    /**
+     * pairs for saving the best lane polynomials produced during RANSAC
+     *
+     * first : current best NewtonPolynomial
+     * second: proportion of supporters of used lane marking points (quality)
+     */
+    std::pair<NewtonPolynomial, double> bestPolyLeft;
+    std::pair<NewtonPolynomial, double> bestPolyCenter;
+    std::pair<NewtonPolynomial, double> bestPolyRight;
 
-        /**
-         * Newton interpolation data points selected for the best polynomial
-         */
-        std::vector<FuPoint<int>> pointsLeft;
-        std::vector<FuPoint<int>> pointsCenter;
-        std::vector<FuPoint<int>> pointsRight;
 
-        /**
-         * Vectors containing the supporters of the best polynomial
-         */
-        std::vector<FuPoint<int>> supportersLeft;
-        std::vector<FuPoint<int>> supportersCenter;
-        std::vector<FuPoint<int>> supportersRight;
+    /**
+     * Lists containing the lane marking points selected for detecting the lane
+     * polynomials during RANSAC
+     */
+    std::vector<FuPoint<int>> laneMarkingsLeft;
+    std::vector<FuPoint<int>> laneMarkingsCenter;
+    std::vector<FuPoint<int>> laneMarkingsRight;
+    std::vector<FuPoint<int>> laneMarkingsNotUsed;
 
-        /**
-         * The polynomials detected on the previous picture
-         */
-        NewtonPolynomial prevPolyLeft;
-        NewtonPolynomial prevPolyCenter;
-        NewtonPolynomial prevPolyRight;
+    /**
+     * Newton interpolation data points selected for the best polynomial
+     */
+    std::vector<FuPoint<int>> pointsLeft;
+    std::vector<FuPoint<int>> pointsCenter;
+    std::vector<FuPoint<int>> pointsRight;
 
-        NewtonPolynomial movedPolyLeft;
-        NewtonPolynomial movedPolyCenter;
-        NewtonPolynomial movedPolyRight;
+    /**
+     * Vectors containing the supporters of the best polynomial
+     */
+    std::vector<FuPoint<int>> supportersLeft;
+    std::vector<FuPoint<int>> supportersCenter;
+    std::vector<FuPoint<int>> supportersRight;
 
-	    bool isPolyMovedRight = false;
-	    bool isPolyMovedCenter = false;
-	    bool isPolyMovedLeft = false;
+    /**
+     * The polynomials detected on the previous picture
+     */
+    NewtonPolynomial prevPolyLeft;
+    NewtonPolynomial prevPolyCenter;
+    NewtonPolynomial prevPolyRight;
 
-        vector<FuPoint<int>> movedPointsRight;
+    NewtonPolynomial movedPolyLeft;
+    NewtonPolynomial movedPolyCenter;
+    NewtonPolynomial movedPolyRight;
 
-        DebugUtils debugUtils;
+    bool isPolyMovedRight = false;
+    bool isPolyMovedCenter = false;
+    bool isPolyMovedLeft = false;
 
-        int laneMarkingSquaredThreshold;
+    vector<FuPoint<int>> movedPointsRight;
 
-        int angleAdjacentLeg;
+    int laneMarkingSquaredThreshold;
 
-        int detectLaneStartX;
+    int angleAdjacentLeg;
 
-        double lastAngle;
+    double lastAngle;
 
-        int maxAngleDiff;
+    int maxAngleDiff;
 
-        FuPoint<double> movedPointForAngle;
-        FuPoint<double> pointForAngle;
-        double oppositeLeg;
-        double adjacentLeg;
-        double gradientForAngle;
+    FuPoint<double> movedPointForAngle;
+    FuPoint<double> pointForAngle;
+    double oppositeLeg;
+    double adjacentLeg;
+    double gradientForAngle;
 
-        double laneWidth = 45.f;
+    double laneWidth = 45.f;
 
-    public:
+    void drawEdgeWindow(cv::Mat &img, std::vector<std::vector<EdgePoint>> edges);
 
-        static const uint32_t MY_ROS_QUEUE_SIZE = 1;
+    void drawLaneMarkingsWindow(cv::Mat &img, std::vector<FuPoint<int>> &laneMarkings);
 
-        static constexpr double PI = 3.14159265;
-                
-    	cLaneDetectionFu(ros::NodeHandle nh);
+    void drawGroupedLaneMarkingsWindow(cv::Mat &img);
 
-    	virtual ~cLaneDetectionFu();
-        
-        void ProcessInput(const sensor_msgs::Image::ConstPtr& msg);
+    void drawRansacWindow(cv::Mat &img);
 
-        void pubAngle();
+    void drawAngleWindow(cv::Mat &img);
 
-        std::vector<std::vector<LineSegment<int>> > getScanlines();
+    void pubRGBImageMsg(cv::Mat &rgb_mat, image_transport::CameraPublisher publisher);
 
-        std::vector<std::vector<EdgePoint> > scanImage(cv::Mat image);
+    void debugPaintPolynom(cv::Mat &m, cv::Scalar color, NewtonPolynomial &p, int start, int end);
 
-        std::vector<FuPoint<int>> extractLaneMarkings(const std::vector<std::vector<EdgePoint>>& edges);
+    void debugPaintPoints(cv::Mat &m, cv::Scalar color, std::vector<FuPoint<int>> &points);
 
-        void buildLaneMarkingsLists(const std::vector<FuPoint<int>> &laneMarkings);
+    void debugWriteImg(cv::Mat &image, std::string folder);
 
-        void findLanePositions(vector<FuPoint<int>> &laneMarkings);
+public:
 
-        void shiftPoint(FuPoint<double> &p, double m, double offset, int x, int y);
+    cLaneDetectionFu(ros::NodeHandle nh);
 
-        void shiftPoint(FuPoint<double> &p, double m, double offset, FuPoint<int> &origin);
+    virtual ~cLaneDetectionFu();
 
-        void generateMovedPolynomials();
+    void ProcessInput(const sensor_msgs::Image::ConstPtr &msg);
 
-        bool isInRange(FuPoint<int> &lanePoint, FuPoint<int> &p);
+    void pubAngle();
 
-        int horizDistanceToDefaultLine(ePosition &line, FuPoint<int> &p);
+    std::vector<std::vector<LineSegment<int>>> getScanlines();
 
-        int horizDistanceToPolynomial(NewtonPolynomial& poly, FuPoint<int> &p);
+    std::vector<std::vector<EdgePoint> > scanImage(cv::Mat image);
 
-        bool isInDefaultRoi(ePosition position, FuPoint<int> &p);
+    std::vector<FuPoint<int>> extractLaneMarkings(const std::vector<std::vector<EdgePoint>> &edges);
 
-        bool isInPolyRoi(NewtonPolynomial &poly, FuPoint<int> &p);
+    void buildLaneMarkingsLists(const std::vector<FuPoint<int>> &laneMarkings);
 
-        void ransac();
+    void findLanePositions(vector<FuPoint<int>> &laneMarkings);
 
-        bool ransacInternal(ePosition position,
-                std::vector<FuPoint<int>>& laneMarkings,
-                std::pair<NewtonPolynomial, double>& bestPoly, NewtonPolynomial& poly,
-                std::vector<FuPoint<int>>& supporters, NewtonPolynomial& prevPoly,
-                std::vector<FuPoint<int>>& points);
+    void shiftPoint(FuPoint<double> &p, double m, double offset, int x, int y);
 
-        bool polyValid(ePosition, NewtonPolynomial, NewtonPolynomial);
+    void shiftPoint(FuPoint<double> &p, double m, double offset, FuPoint<int> &origin);
 
-        bool isSimilar(const NewtonPolynomial &poly1, const NewtonPolynomial &poly2);
+    void generateMovedPolynomials();
 
-        int horizDistance(FuPoint<int> &p1, FuPoint<int> &p2);
+    bool isInRange(FuPoint<int> &lanePoint, FuPoint<int> &p);
 
-        double gradient(double, std::vector<FuPoint<int>>&, std::vector<double>);
+    int horizDistanceToDefaultLine(ePosition &line, FuPoint<int> &p);
 
-        double intersection(FuPoint<double>&, double&, std::vector<FuPoint<int>>&,
-                std::vector<double>&);
+    int horizDistanceToPolynomial(NewtonPolynomial &poly, FuPoint<int> &p);
 
-        double nextGradient(double, NewtonPolynomial&,
-                std::vector<FuPoint<int>>&, std::vector<FuPoint<int>>&,
-                std::vector<double>, std::vector<double>, double);
+    bool isInDefaultRoi(ePosition position, FuPoint<int> &p);
 
-        bool gradientsSimilar(double&, double&);
+    bool isInPolyRoi(NewtonPolynomial &poly, FuPoint<int> &p);
 
-        ePosition maxProportion();
+    void ransac();
 
-        void config_callback(line_detection_fu::LaneDetectionConfig &config, uint32_t level);
-        
+    bool ransacInternal(ePosition position,
+                        std::vector<FuPoint<int>> &laneMarkings,
+                        std::pair<NewtonPolynomial, double> &bestPoly, NewtonPolynomial &poly,
+                        std::vector<FuPoint<int>> &supporters, NewtonPolynomial &prevPoly,
+                        std::vector<FuPoint<int>> &points);
+
+    bool polyValid(ePosition, NewtonPolynomial, NewtonPolynomial);
+
+    bool isSimilar(const NewtonPolynomial &poly1, const NewtonPolynomial &poly2);
+
+    int horizDistance(FuPoint<int> &p1, FuPoint<int> &p2);
+
+    double gradient(double, std::vector<FuPoint<int>> &, std::vector<double>);
+
+    double intersection(FuPoint<double> &, double &, std::vector<FuPoint<int>> &,
+                        std::vector<double> &);
+
+    double nextGradient(double, NewtonPolynomial &,
+                        std::vector<FuPoint<int>> &, std::vector<FuPoint<int>> &,
+                        std::vector<double>, std::vector<double>, double);
+
+    bool gradientsSimilar(double &, double &);
+
+    ePosition maxProportion();
+
+    void config_callback(line_detection_fu::LaneDetectionConfig &config, uint32_t level);
+
 };
 
 #endif 

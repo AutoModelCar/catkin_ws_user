@@ -81,7 +81,6 @@ add_library(LaneDetectorFu
   src/tools/NewtonPolynomial.cpp
   src/tools/LanePolynomial.cpp
   src/tools/IPMapper.cpp
-  src/tools/DebugUtils.cpp
    #src/LaneDetector.cpp
    #src/StrongClassifier.cpp
    #src/WeakClassifier.cpp
