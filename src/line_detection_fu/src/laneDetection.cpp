@@ -15,13 +15,13 @@ const bool SHOW_RANSAC_WINDOW = true;
 const bool SHOW_ANGLE_WINDOW = true;
 
 // try kernel width 5 for now
-const static int g_kernel1DWidth = 5;
+const static int kernel1DWidth = 5;
 
 // params for pubRGBImageMsg
-unsigned int head_sequence_id = 0;
-ros::Time head_time_stamp;
-std::string rgb_frame_id = "_rgb_optical_frame";
-sensor_msgs::CameraInfoPtr rgb_camera_info;
+unsigned int headSequenceId = 0;
+ros::Time headTimeStamp;
+std::string rgbFrameId = "_rgb_optical_frame";
+sensor_msgs::CameraInfoPtr rgbCameraInfo;
 
 // frame number for saving image files
 std::size_t frame = 0;
@@ -34,10 +34,10 @@ cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh) : nh_(nh), priv_nh_("~") 
 
     ROS_ERROR("Node name: %s", node_name.c_str());
 
-    priv_nh_.param<std::string>(node_name + "/camera_name", camera_name, "/usb_cam/image_raw");
+    priv_nh_.param<std::string>(node_name + "/camera_name", cameraName, "/usb_cam/image_raw");
 
-    priv_nh_.param<int>(node_name + "/camW", cam_w, 640);
-    priv_nh_.param<int>(node_name + "/camH", cam_h, 480);
+    priv_nh_.param<int>(node_name + "/camW", camW, 640);
+    priv_nh_.param<int>(node_name + "/camH", camH, 480);
     priv_nh_.param<int>(node_name + "/projYStart", projYStart, 60);
     priv_nh_.param<int>(node_name + "/projImageH", projImageH, 100);
     priv_nh_.param<int>(node_name + "/projImageW", projImageW, 150);
@@ -77,7 +77,7 @@ cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh) : nh_(nh), priv_nh_("~") 
     double c_v;
     double camDeg;
     double camHeight;
-    int cam_h_half = cam_h / 2;
+    int camHHalf = camH / 2;
 
     priv_nh_.param<double>(node_name + "/f_u", f_u, 624.650635);
     priv_nh_.param<double>(node_name + "/f_v", f_v, 626.987244);
@@ -86,7 +86,7 @@ cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh) : nh_(nh), priv_nh_("~") 
     priv_nh_.param<double>(node_name + "/camDeg", camDeg, 13.0);
     priv_nh_.param<double>(node_name + "/camHeight", camHeight, 36.2);
 
-    ipMapper = IPMapper(cam_w, cam_h_half, f_u, f_v, c_u, c_v, camDeg, camHeight);
+    ipMapper = IPMapper(camW, camHHalf, f_u, f_v, c_u, c_v, camDeg, camHeight);
 
     proj_image_w_half = projImageW / 2;
 
@@ -131,27 +131,25 @@ cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh) : nh_(nh), priv_nh_("~") 
 
     lastAngle = 0;
 
-    head_time_stamp = ros::Time::now();
+    headTimeStamp = ros::Time::now();
 
-    read_images_ = nh.subscribe(nh_.resolveName(camera_name), MY_ROS_QUEUE_SIZE, &cLaneDetectionFu::ProcessInput, this);
+    read_images_ = nh.subscribe(nh_.resolveName(cameraName), MY_ROS_QUEUE_SIZE, &cLaneDetectionFu::ProcessInput, this);
 
-    //publish_curvature = nh.advertise<std_msgs::Float32>("/lane_model/curvature", MY_ROS_QUEUE_SIZE);
-    publish_angle = nh.advertise<std_msgs::Float32>("/lane_model/angle", MY_ROS_QUEUE_SIZE);
+    publishAngle = nh.advertise<std_msgs::Float32>("/lane_model/angle", MY_ROS_QUEUE_SIZE);
 
     image_transport::ImageTransport image_transport(nh);
 
-    image_publisher = image_transport.advertiseCamera("/lane_model/lane_model_image", MY_ROS_QUEUE_SIZE);
+    imagePublisher = image_transport.advertiseCamera("/lane_model/lane_model_image", MY_ROS_QUEUE_SIZE);
 
     if (PUBLISH_IMAGES) {
-        image_publisher_ransac = image_transport.advertiseCamera("/lane_model/ransac", MY_ROS_QUEUE_SIZE);
-        image_publisher_lane_markings = image_transport.advertiseCamera("/lane_model/lane_markings", MY_ROS_QUEUE_SIZE);
+        imagePublisherRansac = image_transport.advertiseCamera("/lane_model/ransac", MY_ROS_QUEUE_SIZE);
+        imagePublisherLaneMarkings = image_transport.advertiseCamera("/lane_model/lane_markings", MY_ROS_QUEUE_SIZE);
     }
 
-
-    if (!rgb_camera_info) {
-        rgb_camera_info.reset(new sensor_msgs::CameraInfo());
-        rgb_camera_info->width = projImageW;
-        rgb_camera_info->height = projImageH + 50;
+    if (!rgbCameraInfo) {
+        rgbCameraInfo.reset(new sensor_msgs::CameraInfo());
+        rgbCameraInfo->width = projImageW;
+        rgbCameraInfo->height = projImageH + 50;
     }
 
     //from camera properties and ROI etc we get scanlines (=line segments, úsečky)
@@ -188,11 +186,11 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr &msg) {
     cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::MONO8);
 
     cv::Mat image = cv_ptr->image.clone();
-    Mat cut_image = image(cv::Rect(0, cam_h * 0.25f, cam_w, cam_h * 0.75f));
+    Mat cutImage = image(cv::Rect(0, camH * 0.25f, camW, camH * 0.75f));
 
-    Mat remapped_image = ipMapper.remap(cut_image);
+    Mat remappedImage = ipMapper.remap(cutImage);
 
-    cv::Mat transformedImage = remapped_image(cv::Rect((cam_w / 2) - proj_image_w_half + projImageHorizontalOffset,
+    cv::Mat transformedImage = remappedImage(cv::Rect((camW / 2) - proj_image_w_half + projImageHorizontalOffset,
                                                        projYStart, projImageW, projImageH)).clone();
 
     cv::flip(transformedImage, transformedImage, 0);
@@ -314,7 +312,7 @@ vector<vector<EdgePoint>> cLaneDetectionFu::scanImage(cv::Mat image) {
             int end = segment.getEnd().getX();
 
             // walk along segment
-            for (int i = start; i < end - g_kernel1DWidth; i++) {
+            for (int i = start; i < end - kernel1DWidth; i++) {
                 int sum = 0;
 
                 //cv::Mat uses ROW-major system -> .at(y,x)
@@ -339,11 +337,11 @@ vector<vector<EdgePoint>> cLaneDetectionFu::scanImage(cv::Mat image) {
 
 
                 // +4 because of sobel weighting
-                sum = sum / (3 * g_kernel1DWidth + 4);
+                sum = sum / (3 * kernel1DWidth + 4);
                 //ROS_INFO_STREAM(sum << " is kernel sum.");
                 if (std::abs(sum) > gradientThreshold) {
                     // set scanlineVals at center of kernel
-                    scanlineVals[i + g_kernel1DWidth / 2] = sum;
+                    scanlineVals[i + kernel1DWidth / 2] = sum;
                 }
             }
         }
@@ -1031,7 +1029,7 @@ void cLaneDetectionFu::pubAngle() {
 
     angleMsg.data = result;
 
-    publish_angle.publish(angleMsg);
+    publishAngle.publish(angleMsg);
 }
 
 
@@ -1377,7 +1375,7 @@ void cLaneDetectionFu::drawGroupedLaneMarkingsWindow(Mat &img) {
     cv::line(transformedImagePaintable, p4, p1, cv::Scalar(0, 200, 0));
 
     if (PUBLISH_IMAGES) {
-        pubRGBImageMsg(transformedImagePaintable, image_publisher_lane_markings);
+        pubRGBImageMsg(transformedImagePaintable, imagePublisherLaneMarkings);
     }
 
 
@@ -1411,7 +1409,7 @@ void cLaneDetectionFu::drawRansacWindow(cv::Mat &img) {
 
 
     if (PUBLISH_IMAGES) {
-        pubRGBImageMsg(transformedImagePaintableRansac, image_publisher_ransac);
+        pubRGBImageMsg(transformedImagePaintableRansac, imagePublisherRansac);
     }
 
     if (SHOW_RANSAC_WINDOW) {
@@ -1503,7 +1501,7 @@ void cLaneDetectionFu::drawAngleWindow(Mat &img) {
     }
 
     if (PUBLISH_IMAGES) {
-        pubRGBImageMsg(transformedImagePaintableLaneModel, image_publisher);
+        pubRGBImageMsg(transformedImagePaintableLaneModel, imagePublisher);
     }
 
     if (SHOW_ANGLE_WINDOW) {
@@ -1516,9 +1514,9 @@ void cLaneDetectionFu::drawAngleWindow(Mat &img) {
 void cLaneDetectionFu::pubRGBImageMsg(cv::Mat &rgb_mat, image_transport::CameraPublisher publisher) {
     sensor_msgs::ImagePtr rgb_img(new sensor_msgs::Image);
 
-    rgb_img->header.seq = head_sequence_id;
-    rgb_img->header.stamp = head_time_stamp;
-    rgb_img->header.frame_id = rgb_frame_id;
+    rgb_img->header.seq = headSequenceId;
+    rgb_img->header.stamp = headTimeStamp;
+    rgb_img->header.frame_id = rgbFrameId;
 
     rgb_img->width = rgb_mat.cols;
     rgb_img->height = rgb_mat.rows;
@@ -1532,11 +1530,11 @@ void cLaneDetectionFu::pubRGBImageMsg(cv::Mat &rgb_mat, image_transport::CameraP
     rgb_img->data.resize(size);
     memcpy(&(rgb_img->data[0]), rgb_mat.data, size);
 
-    rgb_camera_info->header.frame_id = rgb_frame_id;
-    rgb_camera_info->header.stamp = head_time_stamp;
-    rgb_camera_info->header.seq = head_sequence_id;
+    rgbCameraInfo->header.frame_id = rgbFrameId;
+    rgbCameraInfo->header.stamp = headTimeStamp;
+    rgbCameraInfo->header.seq = headSequenceId;
 
-    publisher.publish(rgb_img, rgb_camera_info);
+    publisher.publish(rgb_img, rgbCameraInfo);
 }
 
 void cLaneDetectionFu::debugPaintPolynom(cv::Mat &m, cv::Scalar color, NewtonPolynomial &p, int start, int end) {

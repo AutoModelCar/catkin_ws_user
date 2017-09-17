@@ -62,10 +62,6 @@ THIS SOFTWARE IS PROVIDED BY AUDI AG AND CONTRIBUTORS �AS IS� AND ANY EXPRES
 #include <dynamic_reconfigure/server.h>
 #include <line_detection_fu/LaneDetectionConfig.h>
 
-
-using namespace std;
-
-
 class cLaneDetectionFu {
 private:
 
@@ -79,20 +75,18 @@ private:
     ros::Subscriber read_images_;
 
     // publishers
-    //ros::Publisher publish_images;
-    //ros::Publisher publish_curvature;
-    ros::Publisher publish_angle;
+    ros::Publisher publishAngle;
 
     IPMapper ipMapper;
 
-    std::string camera_name;
+    std::string cameraName;
 
-    image_transport::CameraPublisher image_publisher;
-    image_transport::CameraPublisher image_publisher_ransac;
-    image_transport::CameraPublisher image_publisher_lane_markings;
+    image_transport::CameraPublisher imagePublisher;
+    image_transport::CameraPublisher imagePublisherRansac;
+    image_transport::CameraPublisher imagePublisherLaneMarkings;
 
-    int cam_w;
-    int cam_h;
+    int camW;
+    int camH;
     int projYStart;
     int projImageH;
     int projImageW;
