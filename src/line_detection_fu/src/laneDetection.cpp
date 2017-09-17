@@ -1299,24 +1299,6 @@ void cLaneDetectionFu::drawEdgeWindow(Mat &img, vector<vector<EdgePoint>> edges)
         }
     }
 
-    /*cv::Point2d p1(projImageHalfW-(roiBottomW/2),maxYRoi-1);
-    cv::Point2d p2(projImageHalfW+(roiBottomW/2),maxYRoi-1);
-    cv::Point2d p3(projImageHalfW+(roiTopW/2),minYPolyRoi);
-    cv::Point2d p4(projImageHalfW-(roiTopW/2),minYPolyRoi);
-    cv::line(transformedImagePaintable,p1,p2,cv::Scalar(0,200,0));
-    cv::line(transformedImagePaintable,p2,p3,cv::Scalar(0,200,0));
-    cv::line(transformedImagePaintable,p3,p4,cv::Scalar(0,200,0));
-    cv::line(transformedImagePaintable,p4,p1,cv::Scalar(0,200,0));*/
-
-    /*for(int i = 0; i < (int)scanlines.size(); i++)
-    {
-        LineSegment<int> scanline = scanlines[i][0];
-        cv::Point scanlineStart = cv::Point(scanline.getStart().getX(), scanline.getStart().getY());
-        cv::Point scanlineEnd = cv::Point(scanline.getEnd().getX(), scanline.getEnd().getY());
-        cv::line(transformedImagePaintable,scanlineStart,scanlineEnd,cv::Scalar(255,0,0));
-    }*/
-
-
     cv::namedWindow("ROI, scanlines and edges", WINDOW_NORMAL);
     cv::imshow("ROI, scanlines and edges", transformedImagePaintable);
     cv::waitKey(1);
@@ -1352,13 +1334,6 @@ void cLaneDetectionFu::drawGroupedLaneMarkingsWindow(Mat &img) {
     debugPaintPoints(transformedImagePaintable, Scalar(0, 255, 0), laneMarkingsCenter);
     debugPaintPoints(transformedImagePaintable, Scalar(255, 0, 0), laneMarkingsRight);
     debugPaintPoints(transformedImagePaintable, Scalar(0, 255, 255), laneMarkingsNotUsed);
-
-    debugPaintPolynom(transformedImagePaintable, cv::Scalar(0, 255, 255), polyDetectedLeft ? polyLeft : movedPolyLeft,
-                      minYPolyRoi, maxYRoi);
-    debugPaintPolynom(transformedImagePaintable, cv::Scalar(255, 255, 0),
-                      polyDetectedCenter ? polyCenter : movedPolyCenter, minYPolyRoi, maxYRoi);
-    debugPaintPolynom(transformedImagePaintable, cv::Scalar(255, 0, 255),
-                      polyDetectedRight ? polyRight : movedPolyRight, minYPolyRoi, maxYRoi);
 
     cv::Point2d p1l(defaultXLeft, minYPolyRoi);
     cv::Point2d p2l(defaultXLeft, maxYRoi - 1);
@@ -1441,39 +1416,6 @@ void cLaneDetectionFu::drawAngleWindow(Mat &img) {
     cvtColor(transformedImagePaintableLaneModel, transformedImagePaintableLaneModel, CV_GRAY2BGR);
 
     if (polyDetectedRight || isPolyMovedRight) {
-        /*int r = lanePolynomial.getLastUsedPosition() == LEFT ? 255 : 0;
-        int g = lanePolynomial.getLastUsedPosition() == CENTER ? 255 : 0;
-        int b = lanePolynomial.getLastUsedPosition() == RIGHT ? 255 : 0;
-
-
-        for(int i = minYPolyRoi; i < maxYRoi; i++) {
-            cv::Point pointLoc = cv::Point(lanePolynomial.getLanePoly().at(i)+projImageHalfW, i);
-            cv::circle(transformedImagePaintableLaneModel, pointLoc, 0, cv::Scalar(b,g,r), -1);
-        }
-
-        std::vector<FuPoint<int>> supps;
-        switch (lanePolynomial.getLastUsedPosition()) {
-            case LEFT:
-                supps = supportersLeft;
-                break;
-            case CENTER:
-                supps = supportersCenter;
-                break;
-            case RIGHT:
-                supps = supportersRight;
-                break;
-            default:
-                ROS_ERROR("No last used position");
-                supps = supportersRight;
-                break;
-        };
-
-        for(int i = 0; i < (int)supps.size(); i++) {
-            FuPoint<int> supp = supps[i];
-            cv::Point suppLoc = cv::Point(supp.getX(), supp.getY());
-            cv::circle(transformedImagePaintableLaneModel, suppLoc, 1, cv::Scalar(b,g,r), -1);
-        }*/
-
         cv::Point pointLoc = cv::Point(proj_image_w_half, projImageH);
         cv::circle(transformedImagePaintableLaneModel, pointLoc, 2, cv::Scalar(0, 0, 255), -1);
 
@@ -1486,12 +1428,6 @@ void cLaneDetectionFu::drawAngleWindow(Mat &img) {
 
         cv::Point targetPoint = cv::Point(movedPointForAngle.getX(), movedPointForAngle.getY());
         cv::circle(transformedImagePaintableLaneModel, targetPoint, 2, cv::Scalar(0, 0, 255), -1);
-
-        /*cv::Point adjacentLegPoint = cv::Point(projImageHalfW, projImageH - adjacentLeg);
-        cv::line(transformedImagePaintableLaneModel, pointLoc, adjacentLegPoint, cv::Scalar(255,0,0));
-
-        cv::Point oppositeLegPoint = cv::Point(projImageHalfW + oppositeLeg, projImageH - adjacentLeg);
-        cv::line(transformedImagePaintableLaneModel, adjacentLegPoint, oppositeLegPoint, cv::Scalar(0,255,0));*/
 
         double m = -gradientForAngle;
 
