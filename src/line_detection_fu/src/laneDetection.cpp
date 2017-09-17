@@ -35,7 +35,7 @@ cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh) : nh_(nh), priv_nh_("~") 
 
     ROS_ERROR("Node name: %s", node_name.c_str());
 
-    priv_nh_.param<std::string>(node_name + "/camera_name", cameraName, "/usb_cam/image_raw");
+    priv_nh_.param<std::string>(node_name + "/cameraName", cameraName, "/usb_cam/image_raw");
 
     priv_nh_.param<int>(node_name + "/camW", camW, 640);
     priv_nh_.param<int>(node_name + "/camH", camH, 480);
