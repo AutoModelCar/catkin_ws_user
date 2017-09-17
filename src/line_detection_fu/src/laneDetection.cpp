@@ -4,6 +4,7 @@ using namespace std;
 
 // publish ransac and grouped lane frames to show it in rviz
 const bool PUBLISH_IMAGES = true;
+
 // save frames as images in ~/.ros/
 const bool SAVE_FRAME_IMAGES = true;
 
@@ -69,7 +70,6 @@ cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh) : nh_(nh), priv_nh_("~") 
     priv_nh_.param<int>(node_name + "/polyY1", polyY1, 20);
     priv_nh_.param<int>(node_name + "/polyY2", polyY2, 50);
     priv_nh_.param<int>(node_name + "/polyY3", polyY3, 70);
-
 
     double f_u;
     double f_v;
@@ -189,33 +189,34 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr &msg) {
     Mat cutImage = image(cv::Rect(0, camH * 0.25f, camW, camH * 0.75f));
 
     Mat remappedImage = ipMapper.remap(cutImage);
-
     cv::Mat transformedImage = remappedImage(cv::Rect((camW / 2) - proj_image_w_half + projImageHorizontalOffset,
                                                        projYStart, projImageW, projImageH)).clone();
 
     cv::flip(transformedImage, transformedImage, 0);
 
-    //scanlines -> edges (in each scanline we find maximum and minimum of kernel fn ~= where the edge is)
-    //this is where we use input image!
+    // scanlines -> edges (in each scanline we find maximum and minimum of kernel fn ~= where the edge is)
+    // this is where we use input image!
     vector<vector<EdgePoint>> edges = cLaneDetectionFu::scanImage(transformedImage);
-
-    cv::Mat transformedImagePaintable;
     drawEdgeWindow(transformedImage, edges);
 
-    //edges -> lane markings
+    // edges -> lane markings
     vector<FuPoint<int>> laneMarkings = cLaneDetectionFu::extractLaneMarkings(edges);
     drawLaneMarkingsWindow(transformedImage, laneMarkings);
 
+    // initialize defaultXLeft, defaultXCenter and defaultXRight values
     findLanePositions(laneMarkings);
 
-    // start actual execution
+    // assign lane markings to lanes
     buildLaneMarkingsLists(laneMarkings);
     drawGroupedLaneMarkingsWindow(transformedImage);
 
+    // try to fit a polynomial for each lane
     ransac();
+    // generate new polynomials based on polynomials found in ransac for lanes without ransac polynomial
     generateMovedPolynomials();
     drawRansacWindow(transformedImage);
 
+    // calculate and publish the angle the car should drive
     pubAngle();
     drawAngleWindow(transformedImage);
 }
@@ -853,7 +854,7 @@ bool cLaneDetectionFu::ransacInternal(ePosition position,
 
 /**
  * Shifts detected lane polynomials to the position of the undected lane polyominals,
- * so they can be used in the next cycle to group the lane markings
+ * so they can be used in the next cycle to group the lane markings.
  */
 void cLaneDetectionFu::generateMovedPolynomials() {
     movedPolyLeft.clear();
@@ -984,6 +985,12 @@ void cLaneDetectionFu::generateMovedPolynomials() {
     }
 }
 
+/**
+  * Calculates the angle the car should drive to. Uses a point of the right (shifted) polynomial
+  * at distance of angleAdjacentLeg away from the car and shifts it to the center between the right
+  * and center lane in direction of the normal vector. The angle between the shifted point and the
+  * car is published.
+  */
 void cLaneDetectionFu::pubAngle() {
     if (!polyDetectedRight && !isPolyMovedRight) {
         return;
@@ -1009,8 +1016,8 @@ void cLaneDetectionFu::pubAngle() {
 
     gradientForAngle = m;
 
-    oppositeLeg = movedPointForAngle.getX() - proj_image_w_half;
-    adjacentLeg = projImageH - movedPointForAngle.getY();
+    double oppositeLeg = movedPointForAngle.getX() - proj_image_w_half;
+    double adjacentLeg = projImageH - movedPointForAngle.getY();
     double result = atan(oppositeLeg / adjacentLeg) * 180 / PI;
 
     /*

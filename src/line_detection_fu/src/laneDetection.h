@@ -65,25 +65,9 @@ THIS SOFTWARE IS PROVIDED BY AUDI AG AND CONTRIBUTORS �AS IS� AND ANY EXPRES
 class cLaneDetectionFu {
 private:
 
-    // the node handle
-    ros::NodeHandle nh_;
-
-    // Node handle in the private namespace
-    ros::NodeHandle priv_nh_;
-
-    // subscribers
-    ros::Subscriber read_images_;
-
-    // publishers
-    ros::Publisher publishAngle;
-
-    IPMapper ipMapper;
-
-    std::string cameraName;
-
-    image_transport::CameraPublisher imagePublisher;
-    image_transport::CameraPublisher imagePublisherRansac;
-    image_transport::CameraPublisher imagePublisherLaneMarkings;
+    /**
+     * Ros parameters (values can be changed in launch file)
+     */
 
     int camW;
     int camH;
@@ -93,12 +77,11 @@ private:
     int proj_image_w_half;
     int projImageHorizontalOffset;
     int roiTopW;
+
     int roiBottomW;
 
     int scanlinesVerticalDistance;
     int scanlinesMaxCount;
-
-    vector<vector<LineSegment<int>>> scanlines;
 
     int gradientThreshold;
     int nonMaxWidth;
@@ -107,29 +90,12 @@ private:
     int polyY2;
     int polyY3;
 
+    int laneMarkingSquaredThreshold;
 
-    /**
-     * The lane marking polynomials detected in the current picture.
-     */
-    NewtonPolynomial polyLeft;
-    NewtonPolynomial polyCenter;
-    NewtonPolynomial polyRight;
+    int angleAdjacentLeg;
+    int maxAngleDiff;
 
-    /**
-     * Horizontal relative positions of the default lane marking lines.
-     *
-     * These lines are situated in a position, where the lane markings of a
-     * straight lane would show up in the relative coordinate system with the
-     * car standing in the center of the right lane.
-     */
-    int defaultXLeft = 0;
-    int defaultXCenter = 0;
-    int defaultXRight = 0;
-
-    /**
-     * The maximum distance of a point to a polynomial so that it counts as a
-     * supporter.
-     */
+    // The maximum distance of a point to a polynomial so that it counts as a supporter.
     int maxDistance;
 
     /**
@@ -147,21 +113,13 @@ private:
      */
     int interestDistanceDefault;
 
-    /**
-     * The minimal y of the ROIs. Points with smaller y-Values are not
-     * used in RANSAC.
-     */
+    // The minimal y of the ROIs. Points with smaller y-Values are not used in RANSAC.
     int maxYRoi;
 
-    /**
-     * The maximal y of default ROIs. Points with bigger y-Values are not used.
-     */
+    // The maximal y of default ROIs. Points with bigger y-Values are not used.
     int minYDefaultRoi;
 
-    /**
-     * The maximal y of the polynomial ROIs. Points with bigger y-Values are not
-     * used.
-     */
+    // The maximal y of the polynomial ROIs. Points with bigger y-Values are not used.
     int minYPolyRoi;
 
     /**
@@ -170,13 +128,56 @@ private:
      */
     double proportionThreshould;
 
-    /**
-     * Number of RANSAC iterations
-     */
+    // Number of RANSAC iterations
     int iterationsRansac;
 
+
+    /*
+     *   Non-Ros-parameter variables:
+     */
+
+
+    // the node handle
+    ros::NodeHandle nh_;
+
+    // Node handle in the private namespace
+    ros::NodeHandle priv_nh_;
+
+    // subscribers
+    ros::Subscriber read_images_;
+
+    // publishers
+    ros::Publisher publishAngle;
+    image_transport::CameraPublisher imagePublisher;
+    image_transport::CameraPublisher imagePublisherRansac;
+    image_transport::CameraPublisher imagePublisherLaneMarkings;
+
+    IPMapper ipMapper;
+
+    std::string cameraName;
+
+    // scanelines contain detected edges
+    vector<vector<LineSegment<int>>> scanlines;
+
+    // The lane marking polynomials detected in the current picture.
+    NewtonPolynomial polyLeft;
+    NewtonPolynomial polyCenter;
+    NewtonPolynomial polyRight;
+
     /**
-     * flags to determine if a valid polynomial was detected in the last frame
+     * Horizontal relative positions of the default lane marking lines.
+
+     *
+     * These lines are situated in a position, where the lane markings of a
+     * straight lane would show up in the relative coordinate system with the
+     * car standing in the center of the right lane.
+     */
+    int defaultXLeft = 0;
+    int defaultXCenter = 0;
+    int defaultXRight = 0;
+
+    /**
+     * Flags to determine if a valid polynomial was detected in the last frame
      * and therefore the polynomial ROI should be used or if no polynomial could
      * be detected and the default ROI is used.
      */
@@ -185,7 +186,7 @@ private:
     bool polyDetectedRight;
 
     /**
-     * pairs for saving the best lane polynomials produced during RANSAC
+     * Pairs for saving the best lane polynomials produced during RANSAC
      *
      * first : current best NewtonPolynomial
      * second: proportion of supporters of used lane marking points (quality)
@@ -204,23 +205,17 @@ private:
     std::vector<FuPoint<int>> laneMarkingsRight;
     std::vector<FuPoint<int>> laneMarkingsNotUsed;
 
-    /**
-     * Newton interpolation data points selected for the best polynomial
-     */
+    // Newton interpolation data points selected for the best polynomial
     std::vector<FuPoint<int>> pointsLeft;
     std::vector<FuPoint<int>> pointsCenter;
     std::vector<FuPoint<int>> pointsRight;
 
-    /**
-     * Vectors containing the supporters of the best polynomial
-     */
+    // Vectors containing the supporters of the best polynomial
     std::vector<FuPoint<int>> supportersLeft;
     std::vector<FuPoint<int>> supportersCenter;
     std::vector<FuPoint<int>> supportersRight;
 
-    /**
-     * The polynomials detected on the previous picture
-     */
+    // The polynomials detected on the previous picture
     NewtonPolynomial prevPolyLeft;
     NewtonPolynomial prevPolyCenter;
     NewtonPolynomial prevPolyRight;
@@ -241,26 +236,27 @@ private:
     bool isPolyMovedCenter = false;
     bool isPolyMovedLeft = false;
 
+    // Points used to calculate shifted polynomial to right lane
     vector<FuPoint<int>> movedPointsRight;
 
-    int laneMarkingSquaredThreshold;
-
-    int angleAdjacentLeg;
-
+    // Published angle in last frame
     double lastAngle;
 
-    int maxAngleDiff;
-
-    FuPoint<double> movedPointForAngle;
+    // Point on right polynomial (or shifted right polynomial) at x=angleAdjacentLeg
     FuPoint<double> pointForAngle;
-    double oppositeLeg;
-    double adjacentLeg;
+
+    /* 
+     * Result of moving pointForAngle half of laneWidth in direction of normal vector to left.
+     * This is the target point where the car will move to.
+     */
+    FuPoint<double> movedPointForAngle;
+
+    // Gradient of normal vector of right (shifted) polynomial at x=angleAdjacentLeg
     double gradientForAngle;
 
-    /**
-     * The default width between two lanemarkings
-     */
+    // The default width between two lanes
     double laneWidth = 45.f;
+
 
     /**
      * Debugging methods for cleaner code in the ProcessInput() function
