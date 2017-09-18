@@ -878,10 +878,12 @@ void cLaneDetectionFu::generateMovedPolynomials() {
     if (polyDetectedRight && !polyDetectedCenter) {
         isPolyMovedCenter = true;
         shiftPolynomial(polyRight, movedPolyCenter, -laneWidth, pointsRight);
+
         if (!polyDetectedLeft) {
             isPolyMovedLeft = true;
             shiftPolynomial(polyRight, movedPolyLeft, -2 * laneWidth, pointsRight);
         }
+        return;
     } else if (polyDetectedLeft && !polyDetectedCenter) {
         isPolyMovedCenter = true;
         shiftPolynomial(polyLeft, movedPolyCenter, laneWidth, pointsLeft);
@@ -1085,21 +1087,11 @@ bool cLaneDetectionFu::isInRange(FuPoint<int> &lanePoint, FuPoint<int> &p) {
  */
 int cLaneDetectionFu::horizDistanceToDefaultLine(ePosition &line, FuPoint<int> &p) {
     double pX = p.getX();
-    double distance = 0;
 
-    switch (line) {
-        case LEFT:
-            distance = std::abs(pX - defaultXLeft);
-            break;
-        case CENTER:
-            distance = std::abs(pX - defaultXCenter);
-            break;
-        case RIGHT:
-            distance = std::abs(pX - defaultXRight);
-            break;
-    }
-
-    return distance;
+    if (LEFT == line)   return std::abs(pX - defaultXLeft);
+    if (CENTER == line) return std::abs(pX - defaultXCenter);
+    if (RIGHT == line)  return std::abs(pX - defaultXRight);
+    return 0.f;
 }
 
 /**
@@ -1577,15 +1569,11 @@ double cLaneDetectionFu::intersection(FuPoint<double> &p, double &m,
     double x1 = 0;
     double x2 = 0;
 
-    if (dis < 0) {
-        return -1;
-    } else if (dis == 0) {
-        return -b / (2 * a);
-    } else {
-        x1 = (-b + std::sqrt(std::pow(b, 2) - (4 * a * c))) / (2 * a);
-        x2 = (-b - std::sqrt(std::pow(b, 2) - (4 * a * c))) / (2 * a);
-    }
+    if (dis < 0) return -1;
+    if (dis == 0) return -b / (2 * a);
 
+    x1 = (-b + std::sqrt(std::pow(b, 2) - (4 * a * c))) / (2 * a);
+    x2 = (-b - std::sqrt(std::pow(b, 2) - (4 * a * c))) / (2 * a);
     return fmax(x1, x2);
 }
 
@@ -1625,11 +1613,7 @@ bool cLaneDetectionFu::gradientsSimilar(double &m1, double &m2) {
     double a1 = atan(m1) * 180 / PI;
     double a2 = atan(m2) * 180 / PI;
 
-    if (abs(a1 - a2) < 10) {
-        return true;
-    } else {
-        return false;
-    }
+    return (abs(a1 - a2) < 10);
 }
 
 /**
@@ -1637,17 +1621,16 @@ bool cLaneDetectionFu::gradientsSimilar(double &m1, double &m2) {
  * @return The position of the best polynomial
  */
 ePosition cLaneDetectionFu::maxProportion() {
-    ePosition maxPos = LEFT;
     double maxVal = bestPolyLeft.second;
 
     if (bestPolyCenter.second > maxVal) {
-        maxPos = CENTER;
         maxVal = bestPolyCenter.second;
+        return CENTER;
     }
 
     if (bestPolyRight.second > maxVal) {
-        maxPos = RIGHT;
+        return RIGHT;
     }
 
-    return maxPos;
+    return LEFT;
 }
