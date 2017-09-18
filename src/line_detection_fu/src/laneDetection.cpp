@@ -871,113 +871,61 @@ void cLaneDetectionFu::generateMovedPolynomials() {
         return;
     }
 
-    FuPoint<double> pointLeft1 = FuPoint<double>();
-    FuPoint<double> pointLeft2 = FuPoint<double>();
-    FuPoint<double> pointLeft3 = FuPoint<double>();
-
-    FuPoint<double> pointCenter1 = FuPoint<double>();
-    FuPoint<double> pointCenter2 = FuPoint<double>();
-    FuPoint<double> pointCenter3 = FuPoint<double>();
-
-    FuPoint<double> pointRight1 = FuPoint<double>();
-    FuPoint<double> pointRight2 = FuPoint<double>();
-    FuPoint<double> pointRight3 = FuPoint<double>();
-
-    double m1 = 0;
-    double m2 = 0;
-    double m3 = 0;
-
     NewtonPolynomial usedPoly;
+    vector<FuPoint<int>> usedPoints;
+    double offset = 0.f;
 
-    /*
-     * Depending on the sign of the gradient of the poly at the different
-     * x-values and depending on which position we are, we have to add or
-     * subtract the expected distance to the respective lane polynomial, to get
-     * the wanted points.
-     *
-     * The calculation is done for the x- and y-components of the points
-     * separately using the trigonometric ratios of right triangles and the fact
-     * that arctan of some gradient equals its angle to the x-axis in degree.
-     */
     if (polyDetectedRight && !polyDetectedCenter) {
-        usedPoly = polyRight;
-        m1 = gradient(pointsRight.at(0).getY(), pointsRight, usedPoly.getCoefficients());
-        m2 = gradient(pointsRight.at(1).getY(), pointsRight, usedPoly.getCoefficients());
-        m3 = gradient(pointsRight.at(2).getY(), pointsRight, usedPoly.getCoefficients());
-
         isPolyMovedCenter = true;
-
-        shiftPoint(pointCenter1, m1, -laneWidth, pointsRight.at(0));
-        shiftPoint(pointCenter2, m2, -laneWidth, pointsRight.at(1));
-        shiftPoint(pointCenter3, m3, -laneWidth, pointsRight.at(2));
-
+        shiftPolynomial(polyRight, movedPolyCenter, -laneWidth, pointsRight);
         if (!polyDetectedLeft) {
             isPolyMovedLeft = true;
-
-            shiftPoint(pointLeft1, m1, -2 * laneWidth, pointsRight.at(0));
-            shiftPoint(pointLeft2, m2, -2 * laneWidth, pointsRight.at(1));
-            shiftPoint(pointLeft3, m3, -2 * laneWidth, pointsRight.at(2));
+            shiftPolynomial(polyRight, movedPolyLeft, -2 * laneWidth, pointsRight);
         }
     } else if (polyDetectedLeft && !polyDetectedCenter) {
-        usedPoly = polyLeft;
-        m1 = gradient(pointsLeft.at(0).getY(), pointsLeft, usedPoly.getCoefficients());
-        m2 = gradient(pointsLeft.at(1).getY(), pointsLeft, usedPoly.getCoefficients());
-        m3 = gradient(pointsLeft.at(2).getY(), pointsLeft, usedPoly.getCoefficients());
-
         isPolyMovedCenter = true;
-
-        shiftPoint(pointCenter1, m1, laneWidth, pointsLeft.at(0));
-        shiftPoint(pointCenter2, m2, laneWidth, pointsLeft.at(1));
-        shiftPoint(pointCenter3, m3, laneWidth, pointsLeft.at(2));
+        shiftPolynomial(polyLeft, movedPolyCenter, laneWidth, pointsLeft);
 
         if (!polyDetectedRight) {
             isPolyMovedRight = true;
+            shiftPolynomial(polyLeft, movedPolyRight, 2 * laneWidth, pointsLeft);
 
-            shiftPoint(pointRight1, m1, 2 * laneWidth, pointsLeft.at(0));
-            shiftPoint(pointRight2, m2, 2 * laneWidth, pointsLeft.at(1));
-            shiftPoint(pointRight3, m3, 2 * laneWidth, pointsLeft.at(2));
+            usedPoly = polyLeft;
+            usedPoints = pointsLeft;
+            offset = 2 * laneWidth;
         }
     } else if (polyDetectedCenter) {
-        usedPoly = polyCenter;
-        m1 = gradient(pointsCenter.at(0).getY(), pointsCenter, usedPoly.getCoefficients());
-        m2 = gradient(pointsCenter.at(1).getY(), pointsCenter, usedPoly.getCoefficients());
-        m3 = gradient(pointsCenter.at(2).getY(), pointsCenter, usedPoly.getCoefficients());
-
         if (!polyDetectedLeft) {
             isPolyMovedLeft = true;
-
-            shiftPoint(pointLeft1, m1, -laneWidth, pointsCenter.at(0));
-            shiftPoint(pointLeft2, m2, -laneWidth, pointsCenter.at(1));
-            shiftPoint(pointLeft3, m3, -laneWidth, pointsCenter.at(2));
+            shiftPolynomial(polyCenter, movedPolyLeft, -laneWidth, pointsCenter);
         }
-
         if (!polyDetectedRight) {
             isPolyMovedRight = true;
+            shiftPolynomial(polyCenter, movedPolyRight, laneWidth, pointsCenter);
 
-            shiftPoint(pointRight1, m1, laneWidth, pointsCenter.at(0));
-            shiftPoint(pointRight2, m2, laneWidth, pointsCenter.at(1));
-            shiftPoint(pointRight3, m3, laneWidth, pointsCenter.at(2));
+            usedPoly = polyCenter;
+            usedPoints = pointsCenter;
+            offset = laneWidth;
+
         }
-    }
-
-    // create the lane polynomial out of the shifted points
-
-    if (isPolyMovedLeft) {
-        movedPolyLeft.addData(pointLeft1);
-        movedPolyLeft.addData(pointLeft2);
-        movedPolyLeft.addData(pointLeft3);
-    }
-
-    if (isPolyMovedCenter) {
-        movedPolyCenter.addData(pointCenter1);
-        movedPolyCenter.addData(pointCenter2);
-        movedPolyCenter.addData(pointCenter3);
     }
 
     if (isPolyMovedRight) {
-        movedPolyRight.addData(pointRight1);
-        movedPolyRight.addData(pointRight2);
-        movedPolyRight.addData(pointRight3);
+        FuPoint<double> pointRight1 = FuPoint<double>();
+        FuPoint<double> pointRight2 = FuPoint<double>();
+        FuPoint<double> pointRight3 = FuPoint<double>();
+
+        double m1 = 0;
+        double m2 = 0;
+        double m3 = 0;
+
+        m1 = gradient(usedPoints.at(0).getY(), usedPoints, usedPoly.getCoefficients());
+        m2 = gradient(usedPoints.at(1).getY(), usedPoints, usedPoly.getCoefficients());
+        m3 = gradient(usedPoints.at(2).getY(), usedPoints, usedPoly.getCoefficients());
+
+        shiftPoint(pointRight1, m1, offset, usedPoints.at(0));
+        shiftPoint(pointRight2, m2, offset, usedPoints.at(1));
+        shiftPoint(pointRight3, m3, offset, usedPoints.at(2));
 
         movedPointsRight.push_back(FuPoint<int>(pointRight1.getY(), pointRight1.getX()));
         movedPointsRight.push_back(FuPoint<int>(pointRight2.getY(), pointRight2.getX()));
@@ -1058,7 +1006,7 @@ void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, F
  *
  * @param p the shifted point
  * @param m the gradient of the polynomial at x
- * @param offset Positive if shifting to the left, negative to the right
+ * @param offset positive if shifting to the left, negative to the right
  * @param x the x coordinate of the original point
  * @param y the y coordinate of the original point
  */
@@ -1082,6 +1030,35 @@ void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, i
     p.setX(x + offset * sin(atan(-1 / m)));
     p.setY(y + offset * cos(atan(-1 / m)));
 }
+
+/**
+ * Shifts a polynomial by a given offset along the horizontal axis
+ * The sign of the offset dictates the direction of the shift relative to the offset
+ *
+ * @param f the original polynomial
+ * @param g the shifted polynomial
+ * @param offset positive if shifting to the left, negative to the right
+ * @param f_interpolation the points used for interpolating f
+ */
+void cLaneDetectionFu::shiftPolynomial(NewtonPolynomial &f, NewtonPolynomial &g, double offset, vector<FuPoint<int>> &f_interpolation)
+{
+    FuPoint<double> shiftedPoint1;
+    FuPoint<double> shiftedPoint2;
+    FuPoint<double> shiftedPoint3;
+
+    double m1 = gradient(f_interpolation.at(0).getY(), f_interpolation, f.getCoefficients());
+    double m2 = gradient(f_interpolation.at(1).getY(), f_interpolation, f.getCoefficients());
+    double m3 = gradient(f_interpolation.at(2).getY(), f_interpolation, f.getCoefficients());
+
+    shiftPoint(shiftedPoint1, m1, offset, f_interpolation.at(0));
+    shiftPoint(shiftedPoint2, m2, offset, f_interpolation.at(1));
+    shiftPoint(shiftedPoint3, m3, offset, f_interpolation.at(2));
+
+    g.addData(shiftedPoint1);
+    g.addData(shiftedPoint2);
+    g.addData(shiftedPoint3);
+}
+
 
 bool cLaneDetectionFu::isInRange(FuPoint<int> &lanePoint, FuPoint<int> &p) {
     if (p.getY() < minYDefaultRoi || p.getY() > maxYRoi) {
