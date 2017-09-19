@@ -159,11 +159,16 @@ cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh) : nh_(nh), priv_nh_("~") 
     scanlines = getScanlines();
 
     if (SAVE_FRAME_IMAGES) {
-        mkdir("groupedLaneMarkings", S_IRWXU);
-        mkdir("ransac", S_IRWXU);
+        struct stat st;
+        if (!stat("groupedLaneMarkings",&st))
+            system("exec rm -r ./groupedLaneMarkings/*");
+        else
+            mkdir("groupedLaneMarkings", S_IRWXU);
 
-        system("exec rm -r ./groupedLaneMarkings/*");
-        system("exec rm -r ./ransac/*");
+        if (!stat("ransac",&st))
+            system("exec rm -r ./ransac/*");
+        else
+            mkdir("ransac", S_IRWXU);
     }
 }
 
@@ -1007,7 +1012,7 @@ void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, F
  *
  * @param p the shifted point
  * @param m the gradient of the polynomial at x
- * @param offset positive if shifting to the left, negative to the right
+ * @param offset negative if shifting to the left, positive to the right
  * @param x the x coordinate of the original point
  * @param y the y coordinate of the original point
  */
@@ -1032,12 +1037,12 @@ void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, i
 }
 
 /**
- * Shifts a polynomial by a given offset along the horizontal axis
+ * Shifts a polynomial by a given offset
  * The sign of the offset dictates the direction of the shift relative to the offset
  *
  * @param f the original polynomial
  * @param g the shifted polynomial
- * @param offset positive if shifting to the left, negative to the right
+ * @param offset negative if shifting to the left, positive to the right
  * @param interpolationPoints the points used for interpolating f
  */
 void cLaneDetectionFu::shiftPolynomial(NewtonPolynomial &f, NewtonPolynomial &g, double offset, vector<FuPoint<int>> &interpolationPoints) {
@@ -1078,7 +1083,7 @@ bool cLaneDetectionFu::isInRange(FuPoint<int> &lanePoint, FuPoint<int> &p) {
     double distanceX = abs(p.getX() - lanePoint.getX());
     double distanceY = abs(p.getY() - lanePoint.getY());
 
-    return distanceX < interestDistancePoly && distanceY < interestDistancePoly;
+    return ((distanceX < interestDistancePoly) && (distanceY < interestDistancePoly));
 }
 
 
