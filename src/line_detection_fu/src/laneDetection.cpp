@@ -1058,7 +1058,15 @@ void cLaneDetectionFu::shiftPolynomial(NewtonPolynomial &f, NewtonPolynomial &g,
     g.addData(shiftedPoint3);
 }
 
-
+/**
+ * Checks if edge point p is near to lane marking point lanePoint. Enables proper
+ * assignment of edge points to lanes in first frames when the car starts if car
+ * starts in front of a turn.
+ *
+ * @param lanePoint Point of a lane
+ * @param p Point to check
+ * @return True if p is near to lanePoint
+ */
 bool cLaneDetectionFu::isInRange(FuPoint<int> &lanePoint, FuPoint<int> &p) {
     if (p.getY() < minYDefaultRoi || p.getY() > maxYRoi) {
         return false;
@@ -1218,6 +1226,9 @@ bool cLaneDetectionFu::polyValid(ePosition position, NewtonPolynomial poly, Newt
     return true;
 }
 
+/**
+ * Checks if two polynomials are similar and do not vary too much from each other.
+ */
 bool cLaneDetectionFu::isSimilar(const NewtonPolynomial &poly1, const NewtonPolynomial &poly2) {
     FuPoint<int> p1 = FuPoint<int>(poly1.at(polyY1), polyY1);
     FuPoint<int> p2 = FuPoint<int>(poly2.at(polyY1), polyY1);
