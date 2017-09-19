@@ -21,21 +21,21 @@ const static int kernel1DWidth = 5;
 // params for pubRGBImageMsg
 unsigned int headSequenceId = 0;
 ros::Time headTimeStamp;
-std::string rgbFrameId = "_rgb_optical_frame";
+string rgbFrameId = "_rgb_optical_frame";
 sensor_msgs::CameraInfoPtr rgbCameraInfo;
 
 // frame number for saving image files
-std::size_t frame = 0;
+size_t frame = 0;
 
 const uint32_t MY_ROS_QUEUE_SIZE = 1;
 const double PI = 3.14159265;
 
 cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh) : nh_(nh), priv_nh_("~") {
-    std::string node_name = ros::this_node::getName();
+    string node_name = ros::this_node::getName();
 
     ROS_ERROR("Node name: %s", node_name.c_str());
 
-    priv_nh_.param<std::string>(node_name + "/cameraName", cameraName, "/usb_cam/image_raw");
+    priv_nh_.param<string>(node_name + "/cameraName", cameraName, "/usb_cam/image_raw");
 
     priv_nh_.param<int>(node_name + "/camW", camW, 640);
     priv_nh_.param<int>(node_name + "/camH", camH, 480);
@@ -94,36 +94,36 @@ cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh) : nh_(nh), priv_nh_("~") 
     polyDetectedCenter = false;
     polyDetectedRight = false;
 
-    bestPolyLeft = std::make_pair(NewtonPolynomial(), 0);
-    bestPolyCenter = std::make_pair(NewtonPolynomial(), 0);
-    bestPolyRight = std::make_pair(NewtonPolynomial(), 0);
+    bestPolyLeft = make_pair(NewtonPolynomial(), 0);
+    bestPolyCenter = make_pair(NewtonPolynomial(), 0);
+    bestPolyRight = make_pair(NewtonPolynomial(), 0);
 
-    laneMarkingsLeft = std::vector<FuPoint<int>>();
-    laneMarkingsCenter = std::vector<FuPoint<int>>();
-    laneMarkingsRight = std::vector<FuPoint<int>>();
-    laneMarkingsNotUsed = std::vector<FuPoint<int>>();
+    laneMarkingsLeft = vector<FuPoint<int>>();
+    laneMarkingsCenter = vector<FuPoint<int>>();
+    laneMarkingsRight = vector<FuPoint<int>>();
+    laneMarkingsNotUsed = vector<FuPoint<int>>();
 
     polyLeft = NewtonPolynomial();
     polyCenter = NewtonPolynomial();
     polyRight = NewtonPolynomial();
 
-    supportersLeft = std::vector<FuPoint<int>>();
-    supportersCenter = std::vector<FuPoint<int>>();
-    supportersRight = std::vector<FuPoint<int>>();
+    supportersLeft = vector<FuPoint<int>>();
+    supportersCenter = vector<FuPoint<int>>();
+    supportersRight = vector<FuPoint<int>>();
 
     prevPolyLeft = NewtonPolynomial();
     prevPolyCenter = NewtonPolynomial();
     prevPolyRight = NewtonPolynomial();
 
-    pointsLeft = std::vector<FuPoint<int>>();
-    pointsCenter = std::vector<FuPoint<int>>();
-    pointsRight = std::vector<FuPoint<int>>();
+    pointsLeft = vector<FuPoint<int>>();
+    pointsCenter = vector<FuPoint<int>>();
+    pointsRight = vector<FuPoint<int>>();
 
     movedPolyLeft = NewtonPolynomial();
     movedPolyCenter = NewtonPolynomial();
     movedPolyRight = NewtonPolynomial();
 
-    movedPointsRight = std::vector<FuPoint<int>>();
+    movedPointsRight = vector<FuPoint<int>>();
     movedPointForAngle = FuPoint<double>();
     pointForAngle = FuPoint<double>();
 
@@ -172,9 +172,9 @@ cLaneDetectionFu::~cLaneDetectionFu() {
 
 void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr &msg) {
     // clear some stuff from the last cycle
-    bestPolyLeft = std::make_pair(NewtonPolynomial(), 0);
-    bestPolyCenter = std::make_pair(NewtonPolynomial(), 0);
-    bestPolyRight = std::make_pair(NewtonPolynomial(), 0);
+    bestPolyLeft = make_pair(NewtonPolynomial(), 0);
+    bestPolyCenter = make_pair(NewtonPolynomial(), 0);
+    bestPolyRight = make_pair(NewtonPolynomial(), 0);
 
     supportersLeft.clear();
     supportersCenter.clear();
@@ -300,7 +300,7 @@ vector<vector<EdgePoint>> cLaneDetectionFu::scanImage(cv::Mat image) {
     // walk over all scanlines
     for (auto scanline : scanlines) {
         // set all brightness values on scanline to 0;
-        std::fill(scanlineVals.begin(), scanlineVals.end(), 0);
+        fill(scanlineVals.begin(), scanlineVals.end(), 0);
         int offset = 0;
         if (scanline.size()) {
             offset = scanline.front().getStart().getY();
@@ -340,7 +340,7 @@ vector<vector<EdgePoint>> cLaneDetectionFu::scanImage(cv::Mat image) {
                 // +4 because of sobel weighting
                 sum = sum / (3 * kernel1DWidth + 4);
                 //ROS_INFO_STREAM(sum << " is kernel sum.");
-                if (std::abs(sum) > gradientThreshold) {
+                if (abs(sum) > gradientThreshold) {
                     // set scanlineVals at center of kernel
                     scanlineVals[i + kernel1DWidth / 2] = sum;
                 }
@@ -413,7 +413,7 @@ vector<vector<EdgePoint>> cLaneDetectionFu::scanImage(cv::Mat image) {
                 scanlineEdgePoints.push_back(EdgePoint(imgPos, relPos, scanlineVals[i]));
             }
         }
-        edgePoints.push_back(std::move(scanlineEdgePoints));
+        edgePoints.push_back(move(scanlineEdgePoints));
     }
     // after walking along all scanlines
     // return edgePoints
@@ -424,7 +424,7 @@ vector<vector<EdgePoint>> cLaneDetectionFu::scanImage(cv::Mat image) {
 /**
  * uses Edges to extract lane markings
  */
-std::vector<FuPoint<int>> cLaneDetectionFu::extractLaneMarkings(const std::vector<std::vector<EdgePoint>> &edges) {
+vector<FuPoint<int>> cLaneDetectionFu::extractLaneMarkings(const vector<vector<EdgePoint>> &edges) {
     vector<FuPoint<int>> result;
 
     for (const auto &line : edges) {
@@ -446,7 +446,7 @@ std::vector<FuPoint<int>> cLaneDetectionFu::extractLaneMarkings(const std::vecto
     }
 
     // sort the lane marking edge points
-    std::sort(result.begin(), result.end(),
+    sort(result.begin(), result.end(),
               [](FuPoint<int> a, FuPoint<int> b) {
                   return a.getY() > b.getY();
               });
@@ -565,7 +565,7 @@ void cLaneDetectionFu::findLanePositions(vector<FuPoint<int>> &laneMarkings) {
  *
  * @param laneMarkings  a vector containing all detected lane markings
  */
-void cLaneDetectionFu::buildLaneMarkingsLists(const std::vector<FuPoint<int>> &laneMarkings) {
+void cLaneDetectionFu::buildLaneMarkingsLists(const vector<FuPoint<int>> &laneMarkings) {
     laneMarkingsLeft.clear();
     laneMarkingsCenter.clear();
     laneMarkingsRight.clear();
@@ -702,10 +702,10 @@ void cLaneDetectionFu::ransac() {
  * @return              true if a polynomial could be detected and false when not
  */
 bool cLaneDetectionFu::ransacInternal(ePosition position,
-                                      std::vector<FuPoint<int>> &laneMarkings,
-                                      std::pair<NewtonPolynomial, double> &bestPoly, NewtonPolynomial &poly,
-                                      std::vector<FuPoint<int>> &supporters, NewtonPolynomial &prevPoly,
-                                      std::vector<FuPoint<int>> &points) {
+                                      vector<FuPoint<int>> &laneMarkings,
+                                      pair<NewtonPolynomial, double> &bestPoly, NewtonPolynomial &poly,
+                                      vector<FuPoint<int>> &supporters, NewtonPolynomial &prevPoly,
+                                      vector<FuPoint<int>> &points) {
 
     if (laneMarkings.size() < 7) {
         prevPoly = poly;
@@ -713,19 +713,19 @@ bool cLaneDetectionFu::ransacInternal(ePosition position,
         return false;
     }
 
-    std::vector<FuPoint<int>> tmpSupporters = std::vector<FuPoint<int>>();
+    vector<FuPoint<int>> tmpSupporters = vector<FuPoint<int>>();
 
     // vectors for points selected from the bottom, mid and top of the sorted
     // point vector
-    std::vector<FuPoint<int>> markings1 = std::vector<FuPoint<int>>();
-    std::vector<FuPoint<int>> markings2 = std::vector<FuPoint<int>>();
-    std::vector<FuPoint<int>> markings3 = std::vector<FuPoint<int>>();
+    vector<FuPoint<int>> markings1 = vector<FuPoint<int>>();
+    vector<FuPoint<int>> markings2 = vector<FuPoint<int>>();
+    vector<FuPoint<int>> markings3 = vector<FuPoint<int>>();
 
     bool highEnoughY = false;
 
     // Points are selected from the bottom, mid and top. The selection regions
     // are spread apart for better results during RANSAC
-    for (std::vector<FuPoint<int>>::size_type i = 0; i != laneMarkings.size(); i++) {
+    for (vector<FuPoint<int>>::size_type i = 0; i != laneMarkings.size(); i++) {
         if (i < double(laneMarkings.size()) / 7) {
             markings1.push_back(laneMarkings[i]);
         } else if (i >= (double(laneMarkings.size()) / 7) * 3
@@ -833,7 +833,7 @@ bool cLaneDetectionFu::ransacInternal(ePosition position,
 
         // check if poly is better than bestPoly
         if (proportion > bestPoly.second) {
-            bestPoly = std::make_pair(poly, proportion);
+            bestPoly = make_pair(poly, proportion);
             supporters = tmpSupporters;
 
             points.clear();
@@ -973,7 +973,7 @@ void cLaneDetectionFu::pubAngle() {
     /*
      * filter too rash steering angles / jitter in polynomial data
      */
-    if (std::abs(result - lastAngle) > maxAngleDiff) {
+    if (abs(result - lastAngle) > maxAngleDiff) {
         if (result - lastAngle > 0)
             result = lastAngle + maxAngleDiff;
         else
@@ -997,8 +997,7 @@ void cLaneDetectionFu::pubAngle() {
 
 
 
-void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, FuPoint<int> &origin)
-{
+void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, FuPoint<int> &origin) {
     shiftPoint(p, m, offset, origin.getX(), origin.getY());
 }
 
@@ -1012,8 +1011,7 @@ void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, F
  * @param x the x coordinate of the original point
  * @param y the y coordinate of the original point
  */
-void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, int x, int y)
-{
+void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, int x, int y) {
     /*
      * Depending on the sign of the gradient of the poly at the different
      * x-values and depending on which position we are, we have to add or
@@ -1042,8 +1040,7 @@ void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, i
  * @param offset positive if shifting to the left, negative to the right
  * @param f_interpolation the points used for interpolating f
  */
-void cLaneDetectionFu::shiftPolynomial(NewtonPolynomial &f, NewtonPolynomial &g, double offset, vector<FuPoint<int>> &f_interpolation)
-{
+void cLaneDetectionFu::shiftPolynomial(NewtonPolynomial &f, NewtonPolynomial &g, double offset, vector<FuPoint<int>> &f_interpolation) {
     FuPoint<double> shiftedPoint1;
     FuPoint<double> shiftedPoint2;
     FuPoint<double> shiftedPoint3;
@@ -1070,8 +1067,8 @@ bool cLaneDetectionFu::isInRange(FuPoint<int> &lanePoint, FuPoint<int> &p) {
         return false;
     }
 
-    double distanceX = std::abs(p.getX() - lanePoint.getX());
-    double distanceY = std::abs(p.getY() - lanePoint.getY());
+    double distanceX = abs(p.getX() - lanePoint.getX());
+    double distanceY = abs(p.getY() - lanePoint.getY());
 
     return distanceX < interestDistancePoly && distanceY < interestDistancePoly;
 }
@@ -1088,9 +1085,9 @@ bool cLaneDetectionFu::isInRange(FuPoint<int> &lanePoint, FuPoint<int> &p) {
 int cLaneDetectionFu::horizDistanceToDefaultLine(ePosition &line, FuPoint<int> &p) {
     double pX = p.getX();
 
-    if (LEFT == line)   return std::abs(pX - defaultXLeft);
-    if (CENTER == line) return std::abs(pX - defaultXCenter);
-    if (RIGHT == line)  return std::abs(pX - defaultXRight);
+    if (LEFT == line)   return abs(pX - defaultXLeft);
+    if (CENTER == line) return abs(pX - defaultXCenter);
+    if (RIGHT == line)  return abs(pX - defaultXRight);
     return 0.f;
 }
 
@@ -1106,7 +1103,7 @@ int cLaneDetectionFu::horizDistanceToPolynomial(NewtonPolynomial &poly, FuPoint<
     double pX = p.getX();
 
     double polyX = poly.at(pY);
-    double distance = std::abs(pX - polyX);
+    double distance = abs(pX - polyX);
 
     return distance;
 }
@@ -1156,7 +1153,7 @@ int cLaneDetectionFu::horizDistance(FuPoint<int> &p1, FuPoint<int> &p2) {
     double x1 = p1.getX();
     double x2 = p2.getX();
 
-    return std::abs(x1 - x2);
+    return abs(x1 - x2);
 }
 
 /**
@@ -1557,7 +1554,7 @@ int main(int argc, char **argv) {
  * @return          The x value of the intersection point of normal and 2nd poly
  */
 double cLaneDetectionFu::intersection(FuPoint<double> &p, double &m,
-                                      std::vector<FuPoint<int>> &points, std::vector<double> &coeffs) {
+                                      vector<FuPoint<int>> &points, vector<double> &coeffs) {
     double a = coeffs[2];
     double b = coeffs[1] - (coeffs[2] * points[1].getY())
                - (coeffs[2] * points[0].getY()) + (1.0 / m);
@@ -1565,15 +1562,15 @@ double cLaneDetectionFu::intersection(FuPoint<double> &p, double &m,
                + (coeffs[2] * points[0].getY() * points[1].getY())
                - p.getY() - (p.getX() / m);
 
-    double dis = std::pow(b, 2) - (4 * a * c);
+    double dis = pow(b, 2) - (4 * a * c);
     double x1 = 0;
     double x2 = 0;
 
     if (dis < 0) return -1;
     if (dis == 0) return -b / (2 * a);
 
-    x1 = (-b + std::sqrt(std::pow(b, 2) - (4 * a * c))) / (2 * a);
-    x2 = (-b - std::sqrt(std::pow(b, 2) - (4 * a * c))) / (2 * a);
+    x1 = (-b + sqrt(pow(b, 2) - (4 * a * c))) / (2 * a);
+    x2 = (-b - sqrt(pow(b, 2) - (4 * a * c))) / (2 * a);
     return fmax(x1, x2);
 }
 
@@ -1592,8 +1589,8 @@ double cLaneDetectionFu::intersection(FuPoint<double> &p, double &m,
  * @return          The gradient of the second poly at the intersection point
  */
 double cLaneDetectionFu::nextGradient(double x, NewtonPolynomial &poly1,
-                                      std::vector<FuPoint<int>> &points1, std::vector<FuPoint<int>> &points2,
-                                      std::vector<double> coeffs1, std::vector<double> coeffs2, double m1) {
+                                      vector<FuPoint<int>> &points1, vector<FuPoint<int>> &points2,
+                                      vector<double> coeffs1, vector<double> coeffs2, double m1) {
 
     FuPoint<double> p = FuPoint<double>(x, poly1.at(x));
     double x2 = intersection(p, m1, points2, coeffs2);
