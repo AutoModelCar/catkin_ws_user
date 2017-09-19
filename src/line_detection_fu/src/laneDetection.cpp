@@ -1038,20 +1038,20 @@ void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, i
  * @param f the original polynomial
  * @param g the shifted polynomial
  * @param offset positive if shifting to the left, negative to the right
- * @param f_interpolation the points used for interpolating f
+ * @param interpolationPoints the points used for interpolating f
  */
-void cLaneDetectionFu::shiftPolynomial(NewtonPolynomial &f, NewtonPolynomial &g, double offset, vector<FuPoint<int>> &f_interpolation) {
+void cLaneDetectionFu::shiftPolynomial(NewtonPolynomial &f, NewtonPolynomial &g, double offset, vector<FuPoint<int>> &interpolationPoints) {
     FuPoint<double> shiftedPoint1;
     FuPoint<double> shiftedPoint2;
     FuPoint<double> shiftedPoint3;
 
-    double m1 = gradient(f_interpolation.at(0).getY(), f_interpolation, f.getCoefficients());
-    double m2 = gradient(f_interpolation.at(1).getY(), f_interpolation, f.getCoefficients());
-    double m3 = gradient(f_interpolation.at(2).getY(), f_interpolation, f.getCoefficients());
+    double m1 = gradient(interpolationPoints.at(0).getY(), interpolationPoints, f.getCoefficients());
+    double m2 = gradient(interpolationPoints.at(1).getY(), interpolationPoints, f.getCoefficients());
+    double m3 = gradient(interpolationPoints.at(2).getY(), interpolationPoints, f.getCoefficients());
 
-    shiftPoint(shiftedPoint1, m1, offset, f_interpolation.at(0));
-    shiftPoint(shiftedPoint2, m2, offset, f_interpolation.at(1));
-    shiftPoint(shiftedPoint3, m3, offset, f_interpolation.at(2));
+    shiftPoint(shiftedPoint1, m1, offset, interpolationPoints.at(0));
+    shiftPoint(shiftedPoint2, m2, offset, interpolationPoints.at(1));
+    shiftPoint(shiftedPoint3, m3, offset, interpolationPoints.at(2));
 
     g.addData(shiftedPoint1);
     g.addData(shiftedPoint2);

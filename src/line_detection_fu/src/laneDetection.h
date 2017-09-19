@@ -304,7 +304,7 @@ public:
 
     void shiftPoint(FuPoint<double> &p, double m, double offset, FuPoint<int> &origin);
 
-    void shiftPolynomial(NewtonPolynomial &f, NewtonPolynomial &g, double offset, vector<FuPoint<int>> &f_interpolation);
+    void shiftPolynomial(NewtonPolynomial &f, NewtonPolynomial &g, double offset, vector<FuPoint<int>> &interpolationPoints);
 
     void generateMovedPolynomials();
 
