@@ -1,6 +1,6 @@
 <launch>
 
-  <node name="line_detection_fu_node" pkg="line_detection_fu" type="line_detection_fu_node" >
+  <node name="line_detection_fu_node" pkg="line_detection_fu" type="line_detection_fu_node" output="screen" >
     <param name="camW"                         type="int"    value="640"/>
     <param name="camH"                         type="int"    value="480"/> <!--we will use only bottom half of this...-->
     <param name="projYStart"                   type="int"    value="60"/>

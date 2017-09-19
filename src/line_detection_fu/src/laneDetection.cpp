@@ -33,7 +33,7 @@ const double PI = 3.14159265;
 cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh) : nh_(nh), priv_nh_("~") {
     string node_name = ros::this_node::getName();
 
-    ROS_ERROR("Node name: %s", node_name.c_str());
+    ROS_INFO("Node name: %s", node_name.c_str());
 
     priv_nh_.param<string>(node_name + "/cameraName", cameraName, "/usb_cam/image_raw");
 
@@ -1476,7 +1476,7 @@ void cLaneDetectionFu::debugWriteImg(cv::Mat &image, string folder) {
 
 
 void cLaneDetectionFu::config_callback(line_detection_fu::LaneDetectionConfig &config, uint32_t level) {
-    ROS_ERROR("Reconfigure Request");
+    ROS_INFO("Reconfigure Request");
 
     interestDistancePoly = config.interestDistancePoly;
     interestDistanceDefault = config.interestDistanceDefault;
