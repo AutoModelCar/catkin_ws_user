@@ -115,15 +115,10 @@ cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh) : nh_(nh), priv_nh_("~") 
     prevPolyCenter = NewtonPolynomial();
     prevPolyRight = NewtonPolynomial();
 
-    pointsLeft = vector<FuPoint<int>>();
-    pointsCenter = vector<FuPoint<int>>();
-    pointsRight = vector<FuPoint<int>>();
-
     movedPolyLeft = NewtonPolynomial();
     movedPolyCenter = NewtonPolynomial();
     movedPolyRight = NewtonPolynomial();
 
-    movedPointsRight = vector<FuPoint<int>>();
     movedPointForAngle = FuPoint<double>();
     pointForAngle = FuPoint<double>();
 
@@ -679,14 +674,13 @@ void cLaneDetectionFu::buildLaneMarkingsLists(const vector<FuPoint<int>> &laneMa
  */
 void cLaneDetectionFu::ransac() {
     polyDetectedLeft = ransacInternal(LEFT, laneMarkingsLeft, bestPolyLeft,
-                                      polyLeft, supportersLeft, prevPolyLeft, pointsLeft);
+                                      polyLeft, supportersLeft, prevPolyLeft);
 
     polyDetectedCenter = ransacInternal(CENTER, laneMarkingsCenter,
-                                        bestPolyCenter, polyCenter, supportersCenter, prevPolyCenter,
-                                        pointsCenter);
+                                        bestPolyCenter, polyCenter, supportersCenter, prevPolyCenter);
 
     polyDetectedRight = ransacInternal(RIGHT, laneMarkingsRight, bestPolyRight,
-                                       polyRight, supportersRight, prevPolyRight, pointsRight);
+                                       polyRight, supportersRight, prevPolyRight);
 }
 
 /**
@@ -702,15 +696,12 @@ void cLaneDetectionFu::ransac() {
  *                      polynomial
  * @param prevPoly      A reference to the previous polynomial detected at this
  *                      position
- * @param points        A reference to the points selected for interpolating the
- *                      present best polynomial
  * @return              true if a polynomial could be detected and false when not
  */
 bool cLaneDetectionFu::ransacInternal(ePosition position,
                                       vector<FuPoint<int>> &laneMarkings,
                                       pair<NewtonPolynomial, double> &bestPoly, NewtonPolynomial &poly,
-                                      vector<FuPoint<int>> &supporters, NewtonPolynomial &prevPoly,
-                                      vector<FuPoint<int>> &points) {
+                                      vector<FuPoint<int>> &supporters, NewtonPolynomial &prevPoly) {
 
     if (laneMarkings.size() < 7) {
         prevPoly = poly;
@@ -840,11 +831,6 @@ bool cLaneDetectionFu::ransacInternal(ePosition position,
         if (proportion > bestPoly.second) {
             bestPoly = make_pair(poly, proportion);
             supporters = tmpSupporters;
-
-            points.clear();
-            points.push_back(p1);
-            points.push_back(p2);
-            points.push_back(p3);
         }
     }
 
@@ -865,7 +851,6 @@ void cLaneDetectionFu::generateMovedPolynomials() {
     movedPolyLeft.clear();
     movedPolyCenter.clear();
     movedPolyRight.clear();
-    movedPointsRight.clear();
 
     isPolyMovedLeft = false;
     isPolyMovedCenter = false;
@@ -882,42 +867,42 @@ void cLaneDetectionFu::generateMovedPolynomials() {
 
     if (polyDetectedRight && !polyDetectedCenter) {
         isPolyMovedCenter = true;
-        shiftPolynomial(polyRight, movedPolyCenter, -laneWidth, pointsRight);
+        shiftPolynomial(polyRight, movedPolyCenter, -laneWidth);
 
         if (!polyDetectedLeft) {
             isPolyMovedLeft = true;
-            shiftPolynomial(polyRight, movedPolyLeft, -2 * laneWidth, pointsRight);
+            shiftPolynomial(polyRight, movedPolyLeft, -2 * laneWidth);
         }
         return;
     } else if (polyDetectedLeft && !polyDetectedCenter) {
         isPolyMovedCenter = true;
-        shiftPolynomial(polyLeft, movedPolyCenter, laneWidth, pointsLeft);
+        shiftPolynomial(polyLeft, movedPolyCenter, laneWidth);
 
         if (!polyDetectedRight) {
             isPolyMovedRight = true;
-            shiftPolynomial(polyLeft, movedPolyRight, 2 * laneWidth, pointsLeft);
+            shiftPolynomial(polyLeft, movedPolyRight, 2 * laneWidth);
 
-            usedPoly = polyLeft;
+            /*usedPoly = polyLeft;
             usedPoints = pointsLeft;
-            offset = 2 * laneWidth;
+            offset = 2 * laneWidth;*/
         }
     } else if (polyDetectedCenter) {
         if (!polyDetectedLeft) {
             isPolyMovedLeft = true;
-            shiftPolynomial(polyCenter, movedPolyLeft, -laneWidth, pointsCenter);
+            shiftPolynomial(polyCenter, movedPolyLeft, -laneWidth);
         }
         if (!polyDetectedRight) {
             isPolyMovedRight = true;
-            shiftPolynomial(polyCenter, movedPolyRight, laneWidth, pointsCenter);
+            shiftPolynomial(polyCenter, movedPolyRight, laneWidth);
 
-            usedPoly = polyCenter;
+            /*usedPoly = polyCenter;
             usedPoints = pointsCenter;
-            offset = laneWidth;
+            offset = laneWidth;*/
 
         }
     }
 
-    if (isPolyMovedRight) {
+    /*if (isPolyMovedRight) {
         FuPoint<double> pointRight1 = FuPoint<double>();
         FuPoint<double> pointRight2 = FuPoint<double>();
         FuPoint<double> pointRight3 = FuPoint<double>();
@@ -937,7 +922,7 @@ void cLaneDetectionFu::generateMovedPolynomials() {
         movedPointsRight.push_back(FuPoint<int>(pointRight1.getY(), pointRight1.getX()));
         movedPointsRight.push_back(FuPoint<int>(pointRight2.getY(), pointRight2.getX()));
         movedPointsRight.push_back(FuPoint<int>(pointRight3.getY(), pointRight3.getX()));
-    }
+    }*/
 }
 
 /**
@@ -957,10 +942,10 @@ void cLaneDetectionFu::pubAngle() {
 
     if (polyDetectedRight) {
         xRightLane = polyRight.at(y);
-        m = gradient(y, pointsRight, polyRight.getCoefficients());
+        m = gradient(y, polyRight.getInterpolationPointY(0), polyRight.getInterpolationPointY(1), polyRight.getCoefficients());
     } else {
         xRightLane = movedPolyRight.at(y);
-        m = gradient(y, movedPointsRight, movedPolyRight.getCoefficients());
+        m = gradient(y, movedPolyRight.getInterpolationPointY(0), movedPolyRight.getInterpolationPointY(1), movedPolyRight.getCoefficients());
     }
 
     double offset = -1 * laneWidth / 2;
@@ -1045,18 +1030,18 @@ void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, i
  * @param offset negative if shifting to the left, positive to the right
  * @param interpolationPoints the points used for interpolating f
  */
-void cLaneDetectionFu::shiftPolynomial(NewtonPolynomial &f, NewtonPolynomial &g, double offset, vector<FuPoint<int>> &interpolationPoints) {
+void cLaneDetectionFu::shiftPolynomial(NewtonPolynomial &f, NewtonPolynomial &g, double offset) {
     FuPoint<double> shiftedPoint1;
     FuPoint<double> shiftedPoint2;
     FuPoint<double> shiftedPoint3;
 
-    double m1 = gradient(interpolationPoints.at(0).getY(), interpolationPoints, f.getCoefficients());
-    double m2 = gradient(interpolationPoints.at(1).getY(), interpolationPoints, f.getCoefficients());
-    double m3 = gradient(interpolationPoints.at(2).getY(), interpolationPoints, f.getCoefficients());
+    double m1 = gradient(f.getInterpolationPointX(0), f.getInterpolationPointY(0), f.getInterpolationPointY(1), f.getCoefficients());
+    double m2 = gradient(f.getInterpolationPointX(1), f.getInterpolationPointY(0), f.getInterpolationPointY(1), f.getCoefficients());
+    double m3 = gradient(f.getInterpolationPointX(2), f.getInterpolationPointY(0), f.getInterpolationPointY(1), f.getCoefficients());
 
-    shiftPoint(shiftedPoint1, m1, offset, interpolationPoints.at(0));
-    shiftPoint(shiftedPoint2, m2, offset, interpolationPoints.at(1));
-    shiftPoint(shiftedPoint3, m3, offset, interpolationPoints.at(2));
+    shiftPoint(shiftedPoint1, m1, offset, f.getInterpolationPointX(0), f.getInterpolationPointY(0));
+    shiftPoint(shiftedPoint2, m2, offset, f.getInterpolationPointX(1), f.getInterpolationPointY(1));
+    shiftPoint(shiftedPoint3, m3, offset, f.getInterpolationPointX(2), f.getInterpolationPointY(2));
 
     g.addData(shiftedPoint1);
     g.addData(shiftedPoint2);
@@ -1184,10 +1169,10 @@ int cLaneDetectionFu::horizDistance(FuPoint<int> &p1, FuPoint<int> &p2) {
  * @param coeffs    The coefficients under usage of the newton basis
  * @return          The gradient of the polynomial at x
  */
-double cLaneDetectionFu::gradient(double x, vector<FuPoint<int>> &points, vector<double> coeffs) {
+double cLaneDetectionFu::gradient(double x, double interpolationPoint0Y, double interpolationPoint1Y, vector<double> coeffs) {
     return (2 * coeffs[2] * x + coeffs[1])
-           - (coeffs[2] * points[1].getY())
-           - (coeffs[2] * points[0].getY());
+           - (coeffs[2] * interpolationPoint1Y)
+           - (coeffs[2] * interpolationPoint0Y);
 }
 
 /**
@@ -1604,7 +1589,7 @@ double cLaneDetectionFu::intersection(FuPoint<double> &p, double &m,
  * @param m1        The gradient of the first poly at x
  * @return          The gradient of the second poly at the intersection point
  */
-double cLaneDetectionFu::nextGradient(double x, NewtonPolynomial &poly1,
+/*double cLaneDetectionFu::nextGradient(double x, NewtonPolynomial &poly1,
                                       vector<FuPoint<int>> &points1, vector<FuPoint<int>> &points2,
                                       vector<double> coeffs1, vector<double> coeffs2, double m1) {
 
@@ -1612,7 +1597,7 @@ double cLaneDetectionFu::nextGradient(double x, NewtonPolynomial &poly1,
     double x2 = intersection(p, m1, points2, coeffs2);
 
     return gradient(x2, points2, coeffs2);
-}
+}*/
 
 /**
  * Check two gradients for similarity. Return true if the difference in degree

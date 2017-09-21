@@ -304,7 +304,7 @@ public:
 
     void shiftPoint(FuPoint<double> &p, double m, double offset, FuPoint<int> &origin);
 
-    void shiftPolynomial(NewtonPolynomial &f, NewtonPolynomial &g, double offset, vector<FuPoint<int>> &interpolationPoints);
+    void shiftPolynomial(NewtonPolynomial &f, NewtonPolynomial &g, double offset);
 
     void generateMovedPolynomials();
 
@@ -323,8 +323,7 @@ public:
     bool ransacInternal(ePosition position,
                         std::vector<FuPoint<int>> &laneMarkings,
                         std::pair<NewtonPolynomial, double> &bestPoly, NewtonPolynomial &poly,
-                        std::vector<FuPoint<int>> &supporters, NewtonPolynomial &prevPoly,
-                        std::vector<FuPoint<int>> &points);
+                        std::vector<FuPoint<int>> &supporters, NewtonPolynomial &prevPoly);
 
     bool polyValid(ePosition, NewtonPolynomial, NewtonPolynomial);
 
@@ -332,7 +331,7 @@ public:
 
     int horizDistance(FuPoint<int> &p1, FuPoint<int> &p2);
 
-    double gradient(double, std::vector<FuPoint<int>> &, std::vector<double>);
+    double gradient(double, double, double, std::vector<double>);
 
     double intersection(FuPoint<double> &, double &, std::vector<FuPoint<int>> &,
                         std::vector<double> &);

@@ -21,6 +21,9 @@ public:
 
 	double at(double x) const;
 
+	double getInterpolationPointX(int pointNumber);
+	double getInterpolationPointY(int pointNumber);
+
 	int getDegree() const;
 	bool isInitialized() const;
 	std::vector<double> getCoefficients() const;

@@ -160,6 +160,16 @@ double NewtonPolynomial::at(double x) const
 	return tmp;
 }
 
+double NewtonPolynomial::getInterpolationPointX(int pointNumber)
+{
+	return ys[pointNumber];
+}
+
+double NewtonPolynomial::getInterpolationPointY(int pointNumber)
+{
+	return xs[pointNumber];
+}
+
 /**
  * the degree of the polynomial.
  * A degree of n means that there were n+1 datapoints added.
