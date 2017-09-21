@@ -11,7 +11,6 @@
 #include "geometry_msgs/Transform.h"
 #include "kalman_3d.h"
 
-#include "visual_gps/Transform.h"
 #include <Eigen/Eigen>
 #include <cmvision/Blobs.h>
 
