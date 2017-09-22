@@ -34,7 +34,8 @@ private:
 	/**
 	 * this stores the given data
 	 */
-	std::vector<double> xs, ys;
+	//std::vector<double> xs, ys;
+	std::vector<FuPoint<double>> points;
 
 	/**
 	 * this is a divided-difference table
