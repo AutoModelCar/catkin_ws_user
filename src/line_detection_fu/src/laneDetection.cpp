@@ -996,21 +996,15 @@ void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, i
  * @param interpolationPoints the points used for interpolating f
  */
 void cLaneDetectionFu::shiftPolynomial(NewtonPolynomial &f, NewtonPolynomial &g, double offset) {
-    FuPoint<double> shiftedPoint1;
-    FuPoint<double> shiftedPoint2;
-    FuPoint<double> shiftedPoint3;
+    FuPoint<double> shiftedPoint;
+    double m;
 
-    double m1 = gradient(f.getInterpolationPointX(0), f.getInterpolationPointY(0), f.getInterpolationPointY(1), f.getCoefficients());
-    double m2 = gradient(f.getInterpolationPointX(1), f.getInterpolationPointY(0), f.getInterpolationPointY(1), f.getCoefficients());
-    double m3 = gradient(f.getInterpolationPointX(2), f.getInterpolationPointY(0), f.getInterpolationPointY(1), f.getCoefficients());
+    for (int i = 0; i < 3; i++) {
+        m = gradient(f.getInterpolationPointX(i), f.getInterpolationPointY(0), f.getInterpolationPointY(1), f.getCoefficients());
+        shiftPoint(shiftedPoint, m, offset, f.getInterpolationPointX(i), f.getInterpolationPointY(i));
+        g.addData(shiftedPoint);
+    }
 
-    shiftPoint(shiftedPoint1, m1, offset, f.getInterpolationPointX(0), f.getInterpolationPointY(0));
-    shiftPoint(shiftedPoint2, m2, offset, f.getInterpolationPointX(1), f.getInterpolationPointY(1));
-    shiftPoint(shiftedPoint3, m3, offset, f.getInterpolationPointX(2), f.getInterpolationPointY(2));
-
-    g.addData(shiftedPoint1);
-    g.addData(shiftedPoint2);
-    g.addData(shiftedPoint3);
 }
 
 /**
