@@ -48,19 +48,11 @@ NewtonPolynomial& NewtonPolynomial::addData(double y, double x)
 	int n = ++deg;
 
 	// resize structures
-/*
-	xs.resize(n+1);
-	ys.resize(n+1);
-*/
 	points.resize(n + 1);
 	dd.resize(n+1, n+1);
 	//TODO initialize table with zeros?
 
 	// store given data
-/*
-	xs[n] = x;
-	ys[n] = y;
-*/
 	points[n] = FuPoint<double>(x, y);
 	// insert function output as diffTable[n][n]
 	dd.insert_element(n, n, y);

@@ -861,10 +861,6 @@ void cLaneDetectionFu::generateMovedPolynomials() {
         return;
     }
 
-    NewtonPolynomial usedPoly;
-    vector<FuPoint<int>> usedPoints;
-    double offset = 0.f;
-
     if (polyDetectedRight && !polyDetectedCenter) {
         isPolyMovedCenter = true;
         shiftPolynomial(polyRight, movedPolyCenter, -laneWidth);
@@ -881,10 +877,6 @@ void cLaneDetectionFu::generateMovedPolynomials() {
         if (!polyDetectedRight) {
             isPolyMovedRight = true;
             shiftPolynomial(polyLeft, movedPolyRight, 2 * laneWidth);
-
-            /*usedPoly = polyLeft;
-            usedPoints = pointsLeft;
-            offset = 2 * laneWidth;*/
         }
     } else if (polyDetectedCenter) {
         if (!polyDetectedLeft) {
@@ -894,35 +886,8 @@ void cLaneDetectionFu::generateMovedPolynomials() {
         if (!polyDetectedRight) {
             isPolyMovedRight = true;
             shiftPolynomial(polyCenter, movedPolyRight, laneWidth);
-
-            /*usedPoly = polyCenter;
-            usedPoints = pointsCenter;
-            offset = laneWidth;*/
-
         }
     }
-
-    /*if (isPolyMovedRight) {
-        FuPoint<double> pointRight1 = FuPoint<double>();
-        FuPoint<double> pointRight2 = FuPoint<double>();
-        FuPoint<double> pointRight3 = FuPoint<double>();
-
-        double m1 = 0;
-        double m2 = 0;
-        double m3 = 0;
-
-        m1 = gradient(usedPoints.at(0).getY(), usedPoints, usedPoly.getCoefficients());
-        m2 = gradient(usedPoints.at(1).getY(), usedPoints, usedPoly.getCoefficients());
-        m3 = gradient(usedPoints.at(2).getY(), usedPoints, usedPoly.getCoefficients());
-
-        shiftPoint(pointRight1, m1, offset, usedPoints.at(0));
-        shiftPoint(pointRight2, m2, offset, usedPoints.at(1));
-        shiftPoint(pointRight3, m3, offset, usedPoints.at(2));
-
-        movedPointsRight.push_back(FuPoint<int>(pointRight1.getY(), pointRight1.getX()));
-        movedPointsRight.push_back(FuPoint<int>(pointRight2.getY(), pointRight2.getX()));
-        movedPointsRight.push_back(FuPoint<int>(pointRight3.getY(), pointRight3.getX()));
-    }*/
 }
 
 /**
@@ -1165,7 +1130,8 @@ int cLaneDetectionFu::horizDistance(FuPoint<int> &p1, FuPoint<int> &p2) {
  * Applying the given x value then results in the wanted gradient.
  *
  * @param x         The given x value
- * @param points    The data points used for interpolating the polynomial
+ * @param interpolationPoint0Y    The first data point used for interpolating the polynomial
+ * @param interpolationPoint1Y    The second data point used for interpolating the polynomial
  * @param coeffs    The coefficients under usage of the newton basis
  * @return          The gradient of the polynomial at x
  */
