@@ -88,7 +88,7 @@ cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh) : nh_(nh), priv_nh_("~") 
 
     ipMapper = IPMapper(camW, camHHalf, f_u, f_v, c_u, c_v, camDeg, camHeight);
 
-    proj_image_w_half = projImageW / 2;
+    projImageWHalf = projImageW / 2;
 
     polyDetectedLeft = false;
     polyDetectedCenter = false;
@@ -189,7 +189,7 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr &msg) {
     Mat cutImage = image(cv::Rect(0, camH * 0.25f, camW, camH * 0.75f));
 
     Mat remappedImage = ipMapper.remap(cutImage);
-    cv::Mat transformedImage = remappedImage(cv::Rect((camW / 2) - proj_image_w_half + projImageHorizontalOffset,
+    cv::Mat transformedImage = remappedImage(cv::Rect((camW / 2) - projImageWHalf + projImageHorizontalOffset,
                                                        projYStart, projImageW, projImageH)).clone();
 
     cv::flip(transformedImage, transformedImage, 0);
@@ -235,10 +235,10 @@ vector<vector<LineSegment<int>>> cLaneDetectionFu::getScanlines() {
     vector<vector<LineSegment<int>>> scanlines;
 
     vector<cv::Point> checkContour;
-    checkContour.push_back(cv::Point(proj_image_w_half - (roiBottomW / 2), maxYRoi - 1));
-    checkContour.push_back(cv::Point(proj_image_w_half + (roiBottomW / 2), maxYRoi - 1));
-    checkContour.push_back(cv::Point(proj_image_w_half + (roiTopW / 2), minYPolyRoi));
-    checkContour.push_back(cv::Point(proj_image_w_half - (roiTopW / 2), minYPolyRoi));
+    checkContour.push_back(cv::Point(projImageWHalf - (roiBottomW / 2), maxYRoi - 1));
+    checkContour.push_back(cv::Point(projImageWHalf + (roiBottomW / 2), maxYRoi - 1));
+    checkContour.push_back(cv::Point(projImageWHalf + (roiTopW / 2), minYPolyRoi));
+    checkContour.push_back(cv::Point(projImageWHalf - (roiTopW / 2), minYPolyRoi));
 
     int scanlineStart = 0;
     int scanlineEnd = projImageW;
@@ -489,7 +489,7 @@ void cLaneDetectionFu::findLanePositions(vector<FuPoint<int>> &laneMarkings) {
         }
 
         bool isSupporter = false;
-        if (laneMarking->getX() < proj_image_w_half + projImageHorizontalOffset) {
+        if (laneMarking->getX() < projImageWHalf + projImageHorizontalOffset) {
             for (int i = 0; i < centerStart.size(); i++) {
                 if (isInRange(*centerStart.at(i), *laneMarking)) {
                     isSupporter = true;
@@ -869,7 +869,6 @@ void cLaneDetectionFu::generateMovedPolynomials() {
             isPolyMovedLeft = true;
             shiftPolynomial(polyRight, movedPolyLeft, -2 * laneWidth);
         }
-        return;
     } else if (polyDetectedLeft && !polyDetectedCenter) {
         isPolyMovedCenter = true;
         shiftPolynomial(polyLeft, movedPolyCenter, laneWidth);
@@ -921,7 +920,7 @@ void cLaneDetectionFu::pubAngle() {
 
     gradientForAngle = m;
 
-    double oppositeLeg = movedPointForAngle.getX() - proj_image_w_half;
+    double oppositeLeg = movedPointForAngle.getX() - projImageWHalf;
     double adjacentLeg = projImageH - movedPointForAngle.getY();
     double result = atan(oppositeLeg / adjacentLeg) * 180 / PI;
 
@@ -949,12 +948,6 @@ void cLaneDetectionFu::pubAngle() {
 /*
  *      Utils:
  */
-
-
-
-void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, FuPoint<int> &origin) {
-    shiftPoint(p, m, offset, origin.getX(), origin.getY());
-}
 
 /**
  * Shifts a point by a given offset along the given gradient.
@@ -993,7 +986,6 @@ void cLaneDetectionFu::shiftPoint(FuPoint<double> &p, double m, double offset, i
  * @param f the original polynomial
  * @param g the shifted polynomial
  * @param offset negative if shifting to the left, positive to the right
- * @param interpolationPoints the points used for interpolating f
  */
 void cLaneDetectionFu::shiftPolynomial(NewtonPolynomial &f, NewtonPolynomial &g, double offset) {
     FuPoint<double> shiftedPoint;
@@ -1274,10 +1266,10 @@ void cLaneDetectionFu::drawGroupedLaneMarkingsWindow(Mat &img) {
     cv::Point2d p2r(defaultXRight, maxYRoi - 1);
     cv::line(transformedImagePaintable, p1r, p2r, cv::Scalar(255, 0, 0));
 
-    cv::Point2d p1(proj_image_w_half - (roiBottomW / 2), maxYRoi - 1);
-    cv::Point2d p2(proj_image_w_half + (roiBottomW / 2), maxYRoi - 1);
-    cv::Point2d p3(proj_image_w_half + (roiTopW / 2), minYPolyRoi);
-    cv::Point2d p4(proj_image_w_half - (roiTopW / 2), minYPolyRoi);
+    cv::Point2d p1(projImageWHalf - (roiBottomW / 2), maxYRoi - 1);
+    cv::Point2d p2(projImageWHalf + (roiBottomW / 2), maxYRoi - 1);
+    cv::Point2d p3(projImageWHalf + (roiTopW / 2), minYPolyRoi);
+    cv::Point2d p4(projImageWHalf - (roiTopW / 2), minYPolyRoi);
     cv::line(transformedImagePaintable, p1, p2, cv::Scalar(0, 200, 0));
     cv::line(transformedImagePaintable, p2, p3, cv::Scalar(0, 200, 0));
     cv::line(transformedImagePaintable, p3, p4, cv::Scalar(0, 200, 0));
@@ -1343,10 +1335,10 @@ void cLaneDetectionFu::drawAngleWindow(Mat &img) {
     cvtColor(transformedImagePaintableLaneModel, transformedImagePaintableLaneModel, CV_GRAY2BGR);
 
     if (polyDetectedRight || isPolyMovedRight) {
-        cv::Point pointLoc = cv::Point(proj_image_w_half, projImageH);
+        cv::Point pointLoc = cv::Point(projImageWHalf, projImageH);
         cv::circle(transformedImagePaintableLaneModel, pointLoc, 2, cv::Scalar(0, 0, 255), -1);
 
-        cv::Point anglePointLoc = cv::Point(sin(lastAngle * PI / 180) * angleAdjacentLeg + proj_image_w_half,
+        cv::Point anglePointLoc = cv::Point(sin(lastAngle * PI / 180) * angleAdjacentLeg + projImageWHalf,
                                             projImageH - (cos(lastAngle * PI / 180) * angleAdjacentLeg));
         cv::line(transformedImagePaintableLaneModel, pointLoc, anglePointLoc, cv::Scalar(255, 255, 255));
 
@@ -1549,15 +1541,15 @@ double cLaneDetectionFu::intersection(FuPoint<double> &p, double &m,
  * @param m1        The gradient of the first poly at x
  * @return          The gradient of the second poly at the intersection point
  */
-/*double cLaneDetectionFu::nextGradient(double x, NewtonPolynomial &poly1,
+double cLaneDetectionFu::nextGradient(double x, NewtonPolynomial &poly1,
                                       vector<FuPoint<int>> &points1, vector<FuPoint<int>> &points2,
                                       vector<double> coeffs1, vector<double> coeffs2, double m1) {
 
     FuPoint<double> p = FuPoint<double>(x, poly1.at(x));
     double x2 = intersection(p, m1, points2, coeffs2);
 
-    return gradient(x2, points2, coeffs2);
-}*/
+    return gradient(x2, points2.at(0).getY(), points2.at(1).getY(), coeffs2);
+}
 
 /**
  * Check two gradients for similarity. Return true if the difference in degree

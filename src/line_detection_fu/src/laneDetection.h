@@ -74,7 +74,7 @@ private:
     int projYStart;
     int projImageH;
     int projImageW;
-    int proj_image_w_half;
+    int projImageWHalf;
     int projImageHorizontalOffset;
     int roiTopW;
 
@@ -205,11 +205,6 @@ private:
     std::vector<FuPoint<int>> laneMarkingsRight;
     std::vector<FuPoint<int>> laneMarkingsNotUsed;
 
-    // Newton interpolation data points selected for the best polynomial
-    std::vector<FuPoint<int>> pointsLeft;
-    std::vector<FuPoint<int>> pointsCenter;
-    std::vector<FuPoint<int>> pointsRight;
-
     // Vectors containing the supporters of the best polynomial
     std::vector<FuPoint<int>> supportersLeft;
     std::vector<FuPoint<int>> supportersCenter;
@@ -235,9 +230,6 @@ private:
     bool isPolyMovedRight = false;
     bool isPolyMovedCenter = false;
     bool isPolyMovedLeft = false;
-
-    // Points used to calculate shifted polynomial to right lane
-    vector<FuPoint<int>> movedPointsRight;
 
     // Published angle in last frame
     double lastAngle;
@@ -301,8 +293,6 @@ public:
     void findLanePositions(vector<FuPoint<int>> &laneMarkings);
 
     void shiftPoint(FuPoint<double> &p, double m, double offset, int x, int y);
-
-    void shiftPoint(FuPoint<double> &p, double m, double offset, FuPoint<int> &origin);
 
     void shiftPolynomial(NewtonPolynomial &f, NewtonPolynomial &g, double offset);
 
