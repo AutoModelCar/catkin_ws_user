@@ -1,0 +1,4 @@
+<launch>
+ <node pkg="odom_plotter" type="odom_plotter" name="odom_plotter" output="screen">
+  </node>
+</launch>

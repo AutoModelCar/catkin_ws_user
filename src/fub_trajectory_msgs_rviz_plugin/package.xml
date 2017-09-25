@@ -1,0 +1,25 @@
+<package>
+  <name>fub_trajectory_msgs_rviz_plugin</name>
+  <version>0.0.1</version>
+  <description>
+     Tutorials showing how to write plugins for RViz.
+  </description>
+  <maintainer email="fritz.ulbrich@fu-berlin.de">Fritz Ulbrich</maintainer>
+  <license>BSD</license>
+
+  <url>http://www.autonomos-labs.de</url>
+  <author>Fritz Ulbrich</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>autonomos_cmake</build_depend>
+  <build_depend>rviz</build_depend>
+  <build_depend>fub_trajectory_msgs</build_depend>
+
+  <run_depend>rviz</run_depend>
+  <run_depend>fub_trajectory_msgs</run_depend>
+
+  <export>
+      <rviz plugin="${prefix}/plugin_description.xml"/>
+  </export>
+</package>
