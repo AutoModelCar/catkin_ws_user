@@ -1,0 +1,26 @@
+<launch>
+    <arg name="odom_frame"      default="odom"   doc="Odometry TF frame" />
+    <arg name="use_nodelets"    default="$(optenv USE_NODELETS false)" />
+    <arg name="nodelet_manager" default="$(optenv controller_NODELET_MANAGER controller_nodelet_manager)" />
+    <remap from="planned_path"                     to="/model_car/trajectory" />
+    <group ns="test">
+    <node unless="$(arg use_nodelets)"
+        pkg="fub_controller"
+        name="fub_controller_mig"
+        type="fub_controller_mig"
+        output="screen"
+    >
+        <param name="odom_frame" value="$(arg odom_frame)" />
+    </node>
+
+    <node if="$(arg use_nodelets)"
+        pkg="nodelet"
+        type="nodelet"
+        name="fub_controller_mig"
+        output="screen"
+        args="load fub_controller_mig/Nodelet $(arg nodelet_manager)"
+    >
+        <param name="odom_frame" value="$(arg odom_frame)" />
+    </node>
+</group>
+</launch>
