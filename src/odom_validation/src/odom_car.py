@@ -11,7 +11,6 @@ from matplotlib import animation
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Int16
 from std_msgs.msg import Float32
-#from heading_msg.msg import Yaw
 
 file2write=open("odom_car.txt",'w')
 
@@ -23,10 +22,6 @@ def odom_callback(data):
     file2write.write(",")
     file2write.write(str(data.pose.pose.position.y))
     file2write.write("\n")
-
-
-def yaw_callback(data):
-    print(data)
 
 def main(args):
     rospy.init_node('odom_plotter', anonymous = False)

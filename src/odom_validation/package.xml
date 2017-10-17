@@ -23,7 +23,6 @@
   <build_depend>tf</build_depend>
   <build_depend>cv_bridge</build_depend>
   <build_depend>rospy</build_depend>
-  <build_depend>heading_msg</build_depend>
   <build_depend>message_generation</build_depend>
   <build_depend>nodelet</build_depend>
   <build_depend>std_msgs</build_depend>
@@ -32,7 +31,6 @@
   <run_depend>sensor_msgs</run_depend>
   <run_depend>image_transport</run_depend>
   <run_depend>message_runtime</run_depend>
-  <run_depend>heading_msg</run_depend>
   <run_depend>nav_msgs</run_depend>
   <run_depend>std_msgs</run_depend>
   <run_depend>geometry_msgs</run_depend>
@@ -47,4 +45,3 @@
     <nodelet plugin="${prefix}/nodelet_plugins.xml" />
   </export>
 </package>
-
