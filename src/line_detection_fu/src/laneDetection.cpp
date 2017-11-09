@@ -2,18 +2,18 @@
 
 using namespace std;
 
-// publish ransac and grouped lane frames to show it in rviz
-const bool PUBLISH_IMAGES = true;
-
 // save frames as images in ~/.ros/
-const bool SAVE_FRAME_IMAGES = true;
+//#define SAVE_FRAME_IMAGES
 
 // show windows with results of each step in pipeline of one frame
-const bool SHOW_EDGE_WINDOW = true;
-const bool SHOW_LANE_MARKINGS_WINDOW = true;
-const bool SHOW_GROUPED_LANE_MARKINGS_WINDOW = true;
-const bool SHOW_RANSAC_WINDOW = true;
-const bool SHOW_ANGLE_WINDOW = true;
+#define SHOW_EDGE_WINDOW
+#define SHOW_LANE_MARKINGS_WINDOW
+#define SHOW_GROUPED_LANE_MARKINGS_WINDOW
+#define SHOW_RANSAC_WINDOW
+#define SHOW_ANGLE_WINDOW
+
+// publish ransac and grouped lane frames to show it in rviz
+//#define PUBLISH_IMAGES
 
 // try kernel width 5 for now
 const static int kernel1DWidth = 5;
@@ -136,10 +136,10 @@ cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh) : nh_(nh), priv_nh_("~") 
 
     imagePublisher = image_transport.advertiseCamera("/lane_model/lane_model_image", MY_ROS_QUEUE_SIZE);
 
-    if (PUBLISH_IMAGES) {
+#ifdef PUBLISH_IMAGES
         imagePublisherRansac = image_transport.advertiseCamera("/lane_model/ransac", MY_ROS_QUEUE_SIZE);
         imagePublisherLaneMarkings = image_transport.advertiseCamera("/lane_model/lane_markings", MY_ROS_QUEUE_SIZE);
-    }
+#endif
 
     if (!rgbCameraInfo) {
         rgbCameraInfo.reset(new sensor_msgs::CameraInfo());
@@ -153,18 +153,19 @@ cLaneDetectionFu::cLaneDetectionFu(ros::NodeHandle nh) : nh_(nh), priv_nh_("~") 
     //we should generate this only once in the beginning! or even just have it pregenerated for our cam
     scanlines = getScanlines();
 
-    if (SAVE_FRAME_IMAGES) {
-        struct stat st;
-        if (!stat("groupedLaneMarkings",&st))
-            system("exec rm -r ./groupedLaneMarkings/*");
-        else
-            mkdir("groupedLaneMarkings", S_IRWXU);
+#ifdef SAVE_FRAME_IMAGES
+    struct stat st;
+    if (!stat("groupedLaneMarkings",&st))
+        system("exec rm -r ./groupedLaneMarkings/*");
+    else
+        mkdir("groupedLaneMarkings", S_IRWXU);
 
-        if (!stat("ransac",&st))
-            system("exec rm -r ./ransac/*");
-        else
-            mkdir("ransac", S_IRWXU);
-    }
+    if (!stat("ransac",&st))
+        system("exec rm -r ./ransac/*");
+    else
+        mkdir("ransac", S_IRWXU);
+#endif
+
 }
 
 cLaneDetectionFu::~cLaneDetectionFu() {
@@ -197,28 +198,43 @@ void cLaneDetectionFu::ProcessInput(const sensor_msgs::Image::ConstPtr &msg) {
     // scanlines -> edges (in each scanline we find maximum and minimum of kernel fn ~= where the edge is)
     // this is where we use input image!
     vector<vector<EdgePoint>> edges = cLaneDetectionFu::scanImage(transformedImage);
+
+#ifdef SHOW_EDGE_WINDOW
     drawEdgeWindow(transformedImage, edges);
+#endif
 
     // edges -> lane markings
     vector<FuPoint<int>> laneMarkings = cLaneDetectionFu::extractLaneMarkings(edges);
+
+#if defined(PUBLISH_IMAGES) || defined(SHOW_GROUPED_LANE_MARKINGS_WINDOW)
     drawLaneMarkingsWindow(transformedImage, laneMarkings);
+#endif
 
     // initialize defaultXLeft, defaultXCenter and defaultXRight values
     findLanePositions(laneMarkings);
 
     // assign lane markings to lanes
     buildLaneMarkingsLists(laneMarkings);
+
+#ifdef SHOW_GROUPED_LANE_MARKINGS_WINDOW
     drawGroupedLaneMarkingsWindow(transformedImage);
+#endif
 
     // try to fit a polynomial for each lane
     ransac();
     // generate new polynomials based on polynomials found in ransac for lanes without ransac polynomial
     generateMovedPolynomials();
+
+#if defined(PUBLISH_IMAGES) || defined(SHOW_RANSAC_WINDOW)
     drawRansacWindow(transformedImage);
+#endif
 
     // calculate and publish the angle the car should drive
     pubAngle();
+
+#if defined(PUBLISH_IMAGES) || defined(SHOW_ANGLE_WINDOW)
     drawAngleWindow(transformedImage);
+#endif
 }
 
 /*
@@ -1204,9 +1220,6 @@ bool cLaneDetectionFu::isSimilar(const NewtonPolynomial &poly1, const NewtonPoly
 
 
 void cLaneDetectionFu::drawEdgeWindow(Mat &img, vector<vector<EdgePoint>> edges) {
-    if (!SHOW_EDGE_WINDOW) {
-        return;
-    }
 
     Mat transformedImagePaintable = img.clone();
     cvtColor(transformedImagePaintable, transformedImagePaintable, CV_GRAY2BGR);
@@ -1224,9 +1237,6 @@ void cLaneDetectionFu::drawEdgeWindow(Mat &img, vector<vector<EdgePoint>> edges)
 }
 
 void cLaneDetectionFu::drawLaneMarkingsWindow(Mat &img, vector<FuPoint<int>> &laneMarkings) {
-    if (!SHOW_LANE_MARKINGS_WINDOW) {
-        return;
-    }
 
     Mat transformedImagePaintable = img.clone();
     cv::cvtColor(transformedImagePaintable, transformedImagePaintable, CV_GRAY2BGR);
@@ -1242,9 +1252,6 @@ void cLaneDetectionFu::drawLaneMarkingsWindow(Mat &img, vector<FuPoint<int>> &la
 }
 
 void cLaneDetectionFu::drawGroupedLaneMarkingsWindow(Mat &img) {
-    if (!PUBLISH_IMAGES && !SHOW_GROUPED_LANE_MARKINGS_WINDOW && !SAVE_FRAME_IMAGES) {
-        return;
-    }
 
     Mat transformedImagePaintable = img.clone();
     cv::cvtColor(transformedImagePaintable, transformedImagePaintable, CV_GRAY2BGR);
@@ -1275,27 +1282,23 @@ void cLaneDetectionFu::drawGroupedLaneMarkingsWindow(Mat &img) {
     cv::line(transformedImagePaintable, p3, p4, cv::Scalar(0, 200, 0));
     cv::line(transformedImagePaintable, p4, p1, cv::Scalar(0, 200, 0));
 
-    if (PUBLISH_IMAGES) {
-        pubRGBImageMsg(transformedImagePaintable, imagePublisherLaneMarkings);
-    }
+#ifdef PUBLISH_IMAGES
+    pubRGBImageMsg(transformedImagePaintable, imagePublisherLaneMarkings);
+#endif
 
 
-    if (SHOW_GROUPED_LANE_MARKINGS_WINDOW) {
-        cv::namedWindow("Grouped Lane Markings", WINDOW_NORMAL);
-        cv::imshow("Grouped Lane Markings", transformedImagePaintable);
-        cv::waitKey(1);
-    }
+#ifdef SHOW_GROUPED_LANE_MARKINGS_WINDOW
+    cv::namedWindow("Grouped Lane Markings", WINDOW_NORMAL);
+    cv::imshow("Grouped Lane Markings", transformedImagePaintable);
+    cv::waitKey(1);
+#endif
 
-    if (SAVE_FRAME_IMAGES) {
-        debugWriteImg(transformedImagePaintable, "groupedLaneMarkings");
-    }
+#ifdef SAVE_FRAME_IMAGES
+    debugWriteImg(transformedImagePaintable, "groupedLaneMarkings");
+#endif
 }
 
 void cLaneDetectionFu::drawRansacWindow(cv::Mat &img) {
-
-    if (!PUBLISH_IMAGES && !SHOW_RANSAC_WINDOW && !SAVE_FRAME_IMAGES) {
-        return;
-    }
 
     cv::Mat transformedImagePaintableRansac = img.clone();
     cv::cvtColor(transformedImagePaintableRansac, transformedImagePaintableRansac, CV_GRAY2BGR);
@@ -1309,27 +1312,23 @@ void cLaneDetectionFu::drawRansacWindow(cv::Mat &img) {
     debugPaintPolynom(transformedImagePaintableRansac, cv::Scalar(255, 120, 0), movedPolyRight, minYPolyRoi, maxYRoi);
 
 
-    if (PUBLISH_IMAGES) {
-        pubRGBImageMsg(transformedImagePaintableRansac, imagePublisherRansac);
-    }
+#ifdef PUBLISH_IMAGES
+    pubRGBImageMsg(transformedImagePaintableRansac, imagePublisherRansac);
+#endif
 
-    if (SHOW_RANSAC_WINDOW) {
-        cv::namedWindow("RANSAC results", WINDOW_NORMAL);
-        cv::imshow("RANSAC results", transformedImagePaintableRansac);
-        cv::waitKey(1);
-    }
+#ifdef SHOW_RANSAC_WINDOW
+    cv::namedWindow("RANSAC results", WINDOW_NORMAL);
+    cv::imshow("RANSAC results", transformedImagePaintableRansac);
+    cv::waitKey(1);
+#endif
 
-    if (SAVE_FRAME_IMAGES) {
-        debugWriteImg(transformedImagePaintableRansac, "ransac");
-    }
+#ifdef SAVE_FRAME_IMAGES
+    debugWriteImg(transformedImagePaintableRansac, "ransac");
+#endif
 }
 
 void cLaneDetectionFu::drawAngleWindow(Mat &img) {
     frame++;
-
-    if (!PUBLISH_IMAGES && !SHOW_ANGLE_WINDOW) {
-        return;
-    }
 
     Mat transformedImagePaintableLaneModel = img.clone();
     cvtColor(transformedImagePaintableLaneModel, transformedImagePaintableLaneModel, CV_GRAY2BGR);
@@ -1362,15 +1361,15 @@ void cLaneDetectionFu::drawAngleWindow(Mat &img) {
         cv::circle(transformedImagePaintableLaneModel, pointLoc, 3, cv::Scalar(0, 0, 255), 0);
     }
 
-    if (PUBLISH_IMAGES) {
-        pubRGBImageMsg(transformedImagePaintableLaneModel, imagePublisher);
-    }
+#ifdef PUBLISH_IMAGES
+    pubRGBImageMsg(transformedImagePaintableLaneModel, imagePublisher);
+#endif
 
-    if (SHOW_ANGLE_WINDOW) {
-        cv::namedWindow("Lane polynomial", WINDOW_NORMAL);
-        cv::imshow("Lane polynomial", transformedImagePaintableLaneModel);
-        cv::waitKey(1);
-    }
+#ifdef SHOW_ANGLE_WINDOW
+    cv::namedWindow("Lane polynomial", WINDOW_NORMAL);
+    cv::imshow("Lane polynomial", transformedImagePaintableLaneModel);
+    cv::waitKey(1);
+#endif
 }
 
 void cLaneDetectionFu::pubRGBImageMsg(cv::Mat &rgb_mat, image_transport::CameraPublisher publisher) {
