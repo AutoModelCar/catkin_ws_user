@@ -1,0 +1,10 @@
+<library path="lib/libfub_controller_mig_nodelet">
+	<class name="fub_controller_mig/Nodelet"
+	       type="fub::controller::mig::ControllerMig"
+	       base_class_type="nodelet::Nodelet"
+	>
+		<description>
+			Controller nodelet for MIG
+		</description>
+	</class>
+</library>

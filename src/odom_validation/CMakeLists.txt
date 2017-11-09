@@ -19,7 +19,6 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   roscpp
   tf
-  heading_msg
 )
 
 find_package(Eigen REQUIRED)
