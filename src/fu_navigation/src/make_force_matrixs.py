@@ -6,10 +6,11 @@ import path_parser
 import matplotlib.pyplot as plt
 
 from scipy.spatial import KDTree
-map_size_x=60 #cm
-map_size_y=40 #cm
+map_size_x=600 #cm
+map_size_y=400 #cm
+resolution = 10 # cm
 lookahead_offset = 16
-matrix = np.zeros( (map_size_x,map_size_y,2),dtype='f' )
+matrix = np.zeros( (map_size_x/resolution,map_size_y/resolution,2),dtype='f' )
 
 def main(map_file):
     xy = np.array(list(path_parser.read_points(map_file)))
@@ -44,8 +45,8 @@ def main(map_file):
         matrix[x_index,y_index,1]=y3-y1
 
     print('please wait ...')
-    for x in range(0, map_size_x):
-        for y in range(0, map_size_y):
+    for x in range(0, map_size_x/resolution):
+        for y in range(0, map_size_y/resolution):
             show_nearest((0.1*x, 0.1*y))
 
 

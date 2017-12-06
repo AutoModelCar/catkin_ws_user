@@ -6,10 +6,10 @@ import path_parser
 import matplotlib.pyplot as plt
 
 from scipy.spatial import KDTree
-map_size_x=60 #cm
-map_size_y=40 #cm
-lookahead_offset = 0
-matrix = np.zeros( (map_size_x,map_size_y,2),dtype='f' )
+map_size_x=600 #cm
+map_size_y=400 #cm
+resolution = 10 # cm
+matrix = np.zeros( (map_size_x/resolution,map_size_y/resolution,2),dtype='f' )
 
 def main(map_file):
     xy = np.array(list(path_parser.read_points(map_file)))
@@ -31,8 +31,8 @@ def main(map_file):
         global matrix
         x1, y1 = target
         print(x1,y1)
-        x_index=np.int(x1*10)
-        y_index=np.int(y1*10)
+        x_index=np.int(x1*resolution)
+        y_index=np.int(y1*resolution)
         print(x_index,y_index)
         x3, y3 = matrix[x_index,y_index,:]
         print(x3,y3)
