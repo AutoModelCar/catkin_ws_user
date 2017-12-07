@@ -9,7 +9,7 @@ from scipy.spatial import KDTree
 map_size_x=600 #cm
 map_size_y=400 #cm
 resolution = 10 # cm
-lookahead_offset = 16
+lookahead_offset = 5 #*10cm
 matrix = np.zeros( (map_size_x/resolution,map_size_y/resolution,2),dtype='f' )
 
 def main(map_file):
@@ -25,7 +25,8 @@ def main(map_file):
 
     def show_nearest(target):
         dist, index = tree.query(target)
-
+        global lookahead_offset
+        lookahead_offset = np.int(5 + (16/(16*dist+1)))
         lookahead_target = xy[(index + lookahead_offset) % len(xy)]
 
         x1, y1 = target
@@ -34,7 +35,7 @@ def main(map_file):
         plt.scatter(*target, color='r')
         plt.scatter(*xy[index], color='g')
         ax = plt.axes()
-        ax.arrow(x1, y1, (x3-x1)/10, (y3-y1)/10 , head_width=0.01, head_length=0.01, fc='k', ec='k')
+        ax.arrow(x1, y1, (x3-x1)/5, (y3-y1)/5 , head_width=0.01, head_length=0.01, fc='k', ec='k')
         plt.scatter(*lookahead_target, color='m')
         plt.show(block=False)
         global matrix
@@ -50,7 +51,7 @@ def main(map_file):
             show_nearest((0.1*x, 0.1*y))
 
 
-    np.save('matrix1.npy', matrix)
+    np.save('matrixDynamicMax16cm.npy', matrix)
     print('matrix is saved.')
     plt.show()
  
