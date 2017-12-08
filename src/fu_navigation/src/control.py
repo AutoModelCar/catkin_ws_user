@@ -2,6 +2,8 @@
 import numpy as np
 import rospy
 from nav_msgs.msg import Odometry
+from geometry_msgs.msg import PoseWithCovarianceStamped
+
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from std_msgs.msg import Int16
 
@@ -11,11 +13,11 @@ class ForceController:
         self.pub = rospy.Publisher("/manual_control/steering", Int16, queue_size=1)
         self.pub_speed = rospy.Publisher("/manual_control/speed", Int16, queue_size=100, latch=True)
         #self.sub_yaw = rospy.Subscriber("/model_car/yaw", Float32, self.callback, queue_size=1)
-        self.sub_odom = rospy.Subscriber("/odom", Odometry, self.callback, queue_size=1)
+        self.sub_odom = rospy.Subscriber("/seat_car/amcl_pose", PoseWithCovarianceStamped, self.callback, queue_size=1)
         self.map_size_x=600 #cm
         self.map_size_y=400 #cm
         self.resolution = 10 # cm
-        self.matrix = np.load('matrix20cm.npy')
+        self.matrix = np.load('matrixDynamic.npy')
 
     def callback(self, data):
 
@@ -42,14 +44,18 @@ class ForceController:
         f_x=np.cos(yaw)*x3 + np.sin(yaw)*y3
         print(f_x)
 
+        f_y=-np.sin(yaw)*x3 + np.cos(yaw)*y3
+        Kp=4
+        steering=Kp*np.arctan(f_y/(4.0*f_x))
+
         if (f_x>0):
             speed = -150
         else:
             speed = 150
-
-        f_y=-np.sin(yaw)*x3 + np.cos(yaw)*y3
-        Kp=0.5
-        steering=Kp*np.arctan(f_y/f_x)
+            if (f_y>0):
+            	steering = -np.pi/2
+            if (f_y<0):
+            	steering = np.pi/2
 
         if (steering>(np.pi)/2):
             steering = (np.pi)/2
