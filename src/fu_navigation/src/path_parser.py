@@ -14,6 +14,11 @@ def read_points(map_file, offset_x=0.0, offset_y=0.0):
             if line.startswith('1.1.'):
                 x, y = line.split('\t')[1:3]
                 yield float(x) + offset_x, float(y) + offset_y
+    with open(map_file) as m_file:
+        for line in m_file:
+            if line.startswith('1.2.'):
+                x, y = line.split('\t')[1:3]
+                yield float(x) + offset_x, float(y) + offset_y
 
 
 def relative_filename(name):

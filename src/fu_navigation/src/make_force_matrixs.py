@@ -26,7 +26,7 @@ def main(map_file):
     def show_nearest(target):
         dist, index = tree.query(target)
         global lookahead_offset
-        lookahead_offset = np.int(5 + (16/(16*dist+1)))
+        lookahead_offset = np.int(2 + (5/(5*dist+1)))
         lookahead_target = xy[(index + lookahead_offset) % len(xy)]
 
         x1, y1 = target
@@ -51,7 +51,7 @@ def main(map_file):
             show_nearest((0.1*x, 0.1*y))
 
 
-    np.save('matrixDynamicMax16cm.npy', matrix)
+    np.save('matrixDynamic_lane2.npy', matrix)
     print('matrix is saved.')
     plt.show()
  
