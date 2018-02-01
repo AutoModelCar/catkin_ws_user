@@ -42,24 +42,32 @@ class ForceController:
                         for index in range(0,2):
                                 self.obstacle=data.markers[index].pose
                                 x1,y1=[data.markers[index].pose.position.x*100,data.markers[index].pose.position.y*100]
-                                if ((x1>self.map_origin[0]-1)and(x1<self.map_size[0]-1)and(y1>self.map_origin[1]-1)and(y1<self.map_size[1]-1)):
-                                        x_index=np.int(round((x1+self.map_origin[0])/self.resolution))
-                                        y_index=np.int(round((y1+self.map_origin[1])/self.resolution))
-                                        theta=np.arctan2(self.matrix[x_index,y_index,1],self.matrix[x_index,y_index,0])
-                                        for i in range(-7,3):
-                                                for j in range(-7,7):
-                                                        if (x_index>-1 and x_index<self.map_size[0]-1 and y_index>-1 and y_index<self.map_size[1]-1):
-                                                                theta=np.arctan2(self.matrix[x_index,y_index,1],self.matrix[x_index,y_index,0])
-                                                                if (((np.cos(theta)*j)**2+(np.sin(theta)*i)**2)<7.0):
-                                                                    Lg= np.sqrt(self.matrix[x_index,y_index,0]**2+self.matrix[x_index,y_index,1]**2)
-                                                                    Lo= np.sqrt(i**2+j**2)
-                                                                    if (Lo!=0):
-                                                                    	if (self.obstacle_matrix[x_index+i,y_index+j,0]!=-100):
-                                                                                self.obstacle_matrix[x_index+i,y_index+j,0]=self.obstacle_matrix[x_index+i,y_index+j,0]+self.matrix[x_index,y_index,0]+i*(Lg/Lo)*max(1.0,(4.0/(abs(Lo)+0.1)))
-                                                                                self.obstacle_matrix[x_index+i,y_index+j,1]=self.obstacle_matrix[x_index+i,y_index+j,1]+self.matrix[x_index,y_index,1]+j*(Lg/Lo)*max(1.0,(4.0/(abs(Lo)+0.1)))
-                                                                       	else:
-                                                                                self.obstacle_matrix[x_index+i,y_index+j,0]=self.matrix[x_index,y_index,0]+i*(Lg/Lo)*max(1.0,(4.0/(abs(Lo)+0.1)))
-                                                                                self.obstacle_matrix[x_index+i,y_index+j,1]=self.matrix[x_index,y_index,1]+j*(Lg/Lo)*max(1.0,(4.0/(abs(Lo)+0.1)))
+                                x_index=np.int(round((x1+self.map_origin[0])/self.resolution))
+                                y_index=np.int(round((y1+self.map_origin[1])/self.resolution))
+                                if ((x_index>-1)and(x_index<(self.map_size[0]/self.resolution-1))and(y_index>-1)and(y_index<(self.map_size[1]/self.resolution-1))):
+                                        for i in range(-10,10):
+                                                for j in range(-10,10):
+                                                            x_index_=x_index+i
+                                                            if (x_index_<0):
+                                                                x_index_=0
+                                                            if (x_index_>((self.map_size[0]/self.resolution)-1)):
+                                                                x_index_=(self.map_size[0]/self.resolution-1)
+                                                            y_index_=y_index+j
+                                                            if (y_index_<0):
+                                                                y_index_=0
+                                                            if (y_index_>((self.map_size[1]/self.resolution)-1)):
+                                                                y_index_=self.map_size[1]/self.resolution-1
+                                                            theta=np.arctan2(self.matrix[x_index,y_index,1],self.matrix[x_index,y_index,0])
+                                                            if ((((np.cos(theta)*i+np.sin(theta)*j)**2)/100+((np.sin(theta)*i-np.cos(theta)*j)**2)/10)<1.0):
+                                                                Lg= np.sqrt(self.matrix[x_index_,y_index_,0]**2+self.matrix[x_index_,y_index_,1]**2)
+                                                                Lo= np.sqrt(i**2+j**2)
+                                                                if (Lo!=0):
+                                                                	if (self.obstacle_matrix[x_index_,y_index_,0]!=-100):
+                                                                            self.obstacle_matrix[x_index_,y_index_,0]=self.obstacle_matrix[x_index_,y_index_,0]+self.matrix[x_index_,y_index_,0]+i*(Lg/Lo)*max(1.0,(4.0/(abs(Lo)+0.1)))
+                                                                            self.obstacle_matrix[x_index_,y_index_,1]=self.obstacle_matrix[x_index_,y_index_,1]+self.matrix[x_index_,y_index_,1]+j*(Lg/Lo)*max(1.0,(4.0/(abs(Lo)+0.1)))
+                                                                   	else:
+                                                                            self.obstacle_matrix[x_index_,y_index_,0]=self.matrix[x_index_,y_index_,0]+i*(Lg/Lo)*max(1.0,(3.0/(abs(Lo)+0.1)))
+                                                                            self.obstacle_matrix[x_index_,y_index_,1]=self.matrix[x_index_,y_index_,1]+j*(Lg/Lo)*max(1.0,(3.0/(abs(Lo)+0.1)))
                                                                     quaternion = quaternion_from_euler(0, 0, np.arctan2(self.obstacle_matrix[x_index+i,y_index+j,1],2.5*self.obstacle_matrix[x_index+i,y_index+j,0]))
                                                                     marker = Marker()
                                                                     marker.ns = 'obstacles3'
