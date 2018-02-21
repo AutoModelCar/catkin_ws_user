@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <package>
-  <name>assignment6_gps</name>
+  <name>fub_navigation</name>
   <version>0.0.0</version>
-  <description>The assignment6_gps package</description>
+  <description>The assignment10_path package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="hakuna@todo.todo">hakuna</maintainer>
+  <maintainer email="benjamin@todo.todo">benjamin</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
@@ -19,7 +19,7 @@
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/assignment6_gps</url> -->
+  <!-- <url type="website">http://wiki.ros.org/assignment10_path</url> -->
 
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->

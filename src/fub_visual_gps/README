@@ -1,0 +1,5 @@
+#run visual gps package
+python angle_localisation.py
+
+#combine the odometry message with the visual gps message using Kalman Filter (UKF)
+python kalman_filter.py
