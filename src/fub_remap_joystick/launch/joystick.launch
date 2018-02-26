@@ -1,0 +1,29 @@
+<launch>
+	<arg name="use_nodelets"    default="true" />
+	<arg name="nodelet_manager" default="$(optenv DUMMY_NODELET_MANAGER nodelet_manager)" />
+	<!-- Core Nodelet Manager -->
+	<node
+		pkg="nodelet"
+		type="nodelet"
+		name="$(arg nodelet_manager)"
+		args="manager">
+			<param name="num_worker_threads" value="8" />
+	</node>
+		<node 		pkg="joy" type="joy_node" name="joy_node" >
+		<param name="joy_node/dev" value="/dev/input/js0"/>
+	</node>
+	<node unless="$(arg use_nodelets)"
+		pkg="fub_remap_joystick"
+		name="fub_remap_joystick"
+		type="fub_remap_joystick"
+	>
+	</node>
+
+	<node if="$(arg use_nodelets)"
+		pkg="nodelet"
+		type="nodelet"
+		name="fub_remap_joystick"
+		args="load fub_remap_joystick/Nodelet $(arg nodelet_manager)" output="screen"
+	>
+	</node>
+</launch>

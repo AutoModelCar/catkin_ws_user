@@ -1,0 +1,10 @@
+<library path="lib/libfub_remap_joystick_nodelet">
+        <class name="fub_remap_joystick/Nodelet"
+                   type="fub_remap_joystick::remap_joystick"
+		   base_class_type="nodelet::Nodelet"
+	>
+		<description>
+			Remapping joystick to drive the car simulator
+		</description>
+	</class>
+</library>
