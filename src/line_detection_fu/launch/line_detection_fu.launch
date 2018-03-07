@@ -1,0 +1,49 @@
+<launch>
+
+  <node name="line_detection_fu_node" pkg="line_detection_fu" type="line_detection_fu_node" output="screen" >
+    <param name="camW"                         type="int"    value="640"/>
+    <param name="camH"                         type="int"    value="480"/> <!--we will use only bottom half of this...-->
+    <param name="projYStart"                   type="int"    value="60"/>
+    <param name="projImageH"                   type="int"    value="100"/>
+    <param name="projImageW"                   type="int"    value="150"/>
+    <param name="projImageHorizontalOffset"    type="int"    value="0"/>
+    <param name="roiTopW"                      type="int"    value="150"/>
+    <param name="roiBottomW"                   type="int"    value="57"/>
+    <param name="maxYRoi"                      type="int"    value="100"/>
+    <param name="minYDefaultRoi"               type="int"    value="10"/>
+    <param name="minYPolyRoi"                  type="int"    value="11"/>
+    <param name="interestDistancePoly"         type="int"    value="10"/>
+    <param name="interestDistanceDefault"      type="int"    value="5"/>
+    <param name="iterationsRansac"             type="int"    value="38"/>
+    <param name="proportionThreshould"         type="double" value="0.68"/>
+    <param name="gradientThreshold"            type="int"    value="10"/>
+    <param name="nonMaxWidth"                  type="int"    value="16"/>
+    <param name="laneMarkingSquaredThreshold"  type="int"    value="36"/>
+    <param name="angleAdjacentLeg"             type="int"    value="18"/>
+    <param name="scanlinesVerticalDistance"    type="int"    value="2"/>
+    <param name="scanlinesMaxCount"            type="int"    value="100"/>
+    <param name="polyY1"                       type="int"    value="20"/>
+    <param name="polyY2"                       type="int"    value="50"/>
+    <param name="polyY3"                       type="int"    value="70"/>
+    <param name="maxAngleDiff"                 type="int"    value="14"/>
+
+    <param name="cameraName"                   type="string"   value="app/camera/rgb/image_raw"/>
+    <param name="camDeg"                       type="double"   value="13.0"/>
+    <param name="camHeight"                    type="double"   value="36.2"/>
+
+
+    <!-- jack 13 720p calibration: -->
+    <!--param name="f_u"                type="double"   value="927.054138"/>
+    <param name="f_v"                   type="double"   value="935.428772"/>
+    <param name="c_u"                   type="double"   value="654.456376"/>
+    <param name="c_v"                   type="double"   value="346.241851"/-->
+
+
+    <!-- jack 13 640*480 - cut to only bottom half (640*240) calibration: -->
+    <param name="f_u"                   type="double"   value="655.554626"/>
+    <param name="f_v"                   type="double"   value="652.052734"/>
+    <param name="c_u"                   type="double"   value="312.773367"/>
+    <param name="c_v"                   type="double"   value="7.779505"/>
+
+  </node>
+</launch>

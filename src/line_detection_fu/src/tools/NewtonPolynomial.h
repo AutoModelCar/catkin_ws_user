@@ -21,6 +21,9 @@ public:
 
 	double at(double x) const;
 
+	double getInterpolationPointX(int pointNumber);
+	double getInterpolationPointY(int pointNumber);
+
 	int getDegree() const;
 	bool isInitialized() const;
 	std::vector<double> getCoefficients() const;
@@ -31,7 +34,7 @@ private:
 	/**
 	 * this stores the given data
 	 */
-	std::vector<double> xs, ys;
+	std::vector<FuPoint<double>> points;
 
 	/**
 	 * this is a divided-difference table

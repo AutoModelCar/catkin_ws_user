@@ -48,15 +48,12 @@ NewtonPolynomial& NewtonPolynomial::addData(double y, double x)
 	int n = ++deg;
 
 	// resize structures
-	xs.resize(n+1);
-	ys.resize(n+1);
+	points.resize(n + 1);
 	dd.resize(n+1, n+1);
 	//TODO initialize table with zeros?
 
 	// store given data
-	xs[n] = x;
-	ys[n] = y;
-
+	points[n] = FuPoint<double>(x, y);
 	// insert function output as diffTable[n][n]
 	dd.insert_element(n, n, y);
 
@@ -70,7 +67,7 @@ NewtonPolynomial& NewtonPolynomial::addData(double y, double x)
 //				<< " xn: " << xs[n] << " xi: " << xs[i]
 //				<< " dd(i+1,n): " << dd(i+1, n) << " dd(i,n-1): " << dd(i, n-1) << std::endl;
 
-		tmp = (dd(i+1, n) - dd(i, n-1)) / (xs[n] - xs[i]);
+		tmp = (dd(i+1, n) - dd(i, n-1)) / (points[n].getX() - points[i].getX());
 
 		// coefficient is stored in diffTable(0, n)
 		dd.insert_element(i, n, tmp);
@@ -122,7 +119,9 @@ NewtonPolynomial& NewtonPolynomial::addData(std::vector<FuPoint<double>> ps)
 }
 
 /**
- * computes polynomial at position x
+ * Computes polynomial at position x of this polynomial.
+ * Axes of polynomial are swapped, i.e. the x value of
+ * the polynomial is the y value of the image.
  *
  * this uses horners method for computation.
  * @param x input for polynomial
@@ -144,7 +143,7 @@ double NewtonPolynomial::at(double x) const
 	double tmp = dd(0, n);	// c_n
 	for (int i = 1; i <= n; ++i)
 	{
-		tmp *= (x - xs[n-i]);
+		tmp *= (x - points[n-i].getX());
 		tmp += dd(0, n-i);
 	}
 
@@ -156,6 +155,16 @@ double NewtonPolynomial::at(double x) const
 //	std::cout << std::endl;
 
 	return tmp;
+}
+
+double NewtonPolynomial::getInterpolationPointX(int index)
+{
+	return points[index].getY();
+}
+
+double NewtonPolynomial::getInterpolationPointY(int index)
+{
+	return points[index].getX();
 }
 
 /**
@@ -195,7 +204,7 @@ std::vector<double> NewtonPolynomial::getCoefficients() const
  */
 NewtonPolynomial& NewtonPolynomial::clear()
 {
-	xs.clear();
+	points.clear();
 	dd.clear();
 
 	deg = -1;

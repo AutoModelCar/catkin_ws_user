@@ -28,6 +28,9 @@ public:
 	MemberType getX() const { return originFuVector.getX(); }
 	MemberType getY() const { return originFuVector.getY(); }
 
+	void setX(MemberType x) { originFuVector.setX(x); }
+	void setY(MemberType y) { originFuVector.setY(y); }
+
 	std::string toString() const {
 		std::stringstream result;
 		result << "FuPoint {" << getX().value() << ", " << getY().value() << "}";
