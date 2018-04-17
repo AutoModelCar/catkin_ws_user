@@ -41,7 +41,7 @@
   <run_depend>message_runtime</run_depend>
   <run_depend>nodelet</run_depend>
   <run_depend>std_msgs</run_depend>
-  <export>
+  <!-- <export>
     <nodelet plugin="${prefix}/nodelet_plugins.xml" />
-  </export>
+  </export> -->
 </package>
