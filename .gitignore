@@ -5,3 +5,4 @@ odroid-build/
 build/
 devel/
 logs/
+/.metadata/
