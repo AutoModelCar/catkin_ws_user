@@ -80,3 +80,4 @@ rospy.loginfo(rospy.get_caller_id() + ": started!")
 
 # spin() simply keeps python from exiting until this node is stopped
 rospy.spin()
+
